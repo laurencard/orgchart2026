@@ -5,27 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NFTYDoor — Organization Chart</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div id="root"></div>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin></script>
-  <script src="env.local.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
   <script type="text/babel" data-presets="react">
     const { useState, useEffect, useRef, useMemo } = React;
 
     const STORAGE_KEY = "nfty-org-chart-v1";
     const ORG_CHART_ROW_ID = "default";
+    const SUPABASE_URL = "https://cvhqmbuyfmcizcbuvbqk.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2aHFtYnV5Zm1jaXpjYnV2YnFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0OTk3MzMsImV4cCI6MjA5MzA3NTczM30.KGS3RVgGapOVSWhbGkoYLc0tud8EvsBNlT8OwETMq9o";
+
     let supabaseClient = null;
     function getSupabase() {
       if (supabaseClient) return supabaseClient;
-      const cfg = typeof window !== "undefined" && window.__NFTY_SUPABASE__;
-      if (!cfg || !cfg.url || !cfg.anonKey) return null;
       const mod = typeof window !== "undefined" && window.supabase;
       if (!mod || typeof mod.createClient !== "function") return null;
-      supabaseClient = mod.createClient(cfg.url, cfg.anonKey);
+      supabaseClient = mod.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
       return supabaseClient;
     }
 
@@ -563,11 +563,15 @@
           const { data, error } = await sb.from("org_chart_state").select("payload").eq("id", ORG_CHART_ROW_ID).maybeSingle();
           if (cancelled) return;
           if (error) {
+            setTeams(loadSavedData());
             setCloudState("error");
             return;
           }
           if (data && data.payload != null) {
             setTeams(data.payload);
+            try {
+              if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, JSON.stringify(data.payload));
+            } catch { /* ignore */ }
             setCloudState("ready");
             return;
           }
