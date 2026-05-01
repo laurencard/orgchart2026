@@ -10,11 +10,24 @@
   <div id="root"></div>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" crossorigin></script>
+  <script src="env.local.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
   <script type="text/babel" data-presets="react">
     const { useState, useEffect, useRef, useMemo } = React;
 
     const STORAGE_KEY = "nfty-org-chart-v1";
+    const ORG_CHART_ROW_ID = "default";
+    let supabaseClient = null;
+    function getSupabase() {
+      if (supabaseClient) return supabaseClient;
+      const cfg = typeof window !== "undefined" && window.__NFTY_SUPABASE__;
+      if (!cfg || !cfg.url || !cfg.anonKey) return null;
+      const mod = typeof window !== "undefined" && window.supabase;
+      if (!mod || typeof mod.createClient !== "function") return null;
+      supabaseClient = mod.createClient(cfg.url, cfg.anonKey);
+      return supabaseClient;
+    }
 
     // ── Inline Lucide-style icons (SVG) ──
     const svgProps = (size, className) => ({ width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', className: className || '' });
@@ -536,7 +549,39 @@
       const [exportMsg, setExportMsg] = useState("");
       const [showOpenRoles, setShowOpenRoles] = useState(true);
       const [saveStatus, setSaveStatus] = useState("saved");
+      const [cloudState, setCloudState] = useState(() => (getSupabase() ? "loading" : "off"));
       const saveTimer = useRef(null);
+
+      useEffect(() => {
+        const sb = getSupabase();
+        if (!sb) {
+          setCloudState("off");
+          return;
+        }
+        let cancelled = false;
+        (async () => {
+          const { data, error } = await sb.from("org_chart_state").select("payload").eq("id", ORG_CHART_ROW_ID).maybeSingle();
+          if (cancelled) return;
+          if (error) {
+            setCloudState("error");
+            return;
+          }
+          if (data && data.payload != null) {
+            setTeams(data.payload);
+            setCloudState("ready");
+            return;
+          }
+          const local = loadSavedData();
+          setTeams(local);
+          const { error: upErr } = await sb.from("org_chart_state").upsert(
+            { id: ORG_CHART_ROW_ID, payload: local, updated_at: new Date().toISOString() },
+            { onConflict: "id" }
+          );
+          if (cancelled) return;
+          setCloudState(upErr ? "error" : "ready");
+        })();
+        return () => { cancelled = true; };
+      }, []);
 
       useEffect(() => {
         if (!teams) return;
@@ -549,8 +594,19 @@
           } catch {
             setSaveStatus("error");
           }
+          const sb = getSupabase();
+          if (sb && cloudState === "ready") {
+            sb.from("org_chart_state")
+              .upsert(
+                { id: ORG_CHART_ROW_ID, payload: teams, updated_at: new Date().toISOString() },
+                { onConflict: "id" }
+              )
+              .then(({ error }) => {
+                if (error) console.warn("Supabase save failed:", error);
+              });
+          }
         }, 600);
-      }, [teams]);
+      }, [teams, cloudState]);
 
       const set = fn => setTeams(prev => fn(prev));
 
@@ -674,6 +730,9 @@
               </div>
               {search && searchIds.size > 0 && <span className="text-xs text-blue-600 font-medium">{searchIds.size} match{searchIds.size !== 1 ? "es" : ""}</span>}
               <div className="flex items-center gap-2 ml-auto flex-wrap">
+                {cloudState === "loading" && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-slate-100 text-slate-600">Cloud…</span>}
+                {cloudState === "ready" && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-indigo-100 text-indigo-700">Supabase</span>}
+                {cloudState === "error" && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-700">Cloud error</span>}
                 <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${saveStatus === "saved" ? "bg-green-100 text-green-700" : saveStatus === "saving" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"}`}>
                   {saveStatus === "saved" ? "✓ Saved" : saveStatus === "saving" ? "Saving…" : "⚠ Save failed"}
                 </span>

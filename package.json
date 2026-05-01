@@ -2,8 +2,9 @@
   "name": "vercel-static",
   "private": true,
   "scripts": {
-    "deploy": "vercel",
-    "deploy:prod": "vercel --prod"
+    "build": "node scripts/write-supabase-env.js",
+    "deploy": "npm run build && vercel",
+    "deploy:prod": "npm run build && vercel --prod"
   },
   "devDependencies": {
     "vercel": "^39.0.0"
