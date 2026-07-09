@@ -2,9 +2,9 @@
   "name": "vercel-static",
   "private": true,
   "scripts": {
-    "build": "node scripts/build.js",
-    "deploy": "npm run build && vercel",
-    "deploy:prod": "npm run build && vercel --prod"
+    "compile": "node scripts/build.js",
+    "deploy": "npm run compile && vercel",
+    "deploy:prod": "npm run compile && vercel --prod"
   },
   "dependencies": {
     "@babel/core": "^7.25.9",
