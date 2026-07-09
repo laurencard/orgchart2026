@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NFTYDoor — Organization Chart</title>
+  <title>NFTY — By Aug 1</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -15,8 +15,10 @@
   <script type="text/babel" data-presets="react">
     const { useState, useEffect, useRef, useMemo } = React;
 
-    const STORAGE_KEY = "nfty-org-chart-v1";
-    const ORG_CHART_ROW_ID = "default";
+    const STORAGE_KEY = "nfty-org-chart-v2";
+    const AUTH_KEY = "nfty-org-auth";
+    const SITE_PASSWORD = "NFTYDoorPODs";
+    const ORG_CHART_ROW_ID = "aug-2026";
     const SUPABASE_URL = "https://cvhqmbuyfmcizcbuvbqk.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2aHFtYnV5Zm1jaXpjYnV2YnFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0OTk3MzMsImV4cCI6MjA5MzA3NTczM30.KGS3RVgGapOVSWhbGkoYLc0tud8EvsBNlT8OwETMq9o";
 
@@ -48,6 +50,7 @@
     const EyeOff = ({ size = 24, className }) => <svg {...svgProps(size, className)}><path d="M10.73 5.08a10.07 10.07 0 0 1 11.27 11.27 1 1 0 0 1-.41 1.41"/><path d="M14 14a3 3 0 0 1-4.24-4.24"/><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M2 2l20 20"/></svg>;
     const Printer = ({ size = 24, className }) => <svg {...svgProps(size, className)}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/></svg>;
     const Clock = ({ size = 24, className }) => <svg {...svgProps(size, className)}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+    const Lock = ({ size = 24, className }) => <svg {...svgProps(size, className)}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
     const Crown = ({ size = 24, className }) => {
       const p = svgProps(size, className);
       return <svg {...p} strokeWidth={size <= 16 ? 1.5 : 2}><path d="M2 17l4-9 4 5 2-8 2 8 4-5 4 9H2z"/></svg>;
@@ -185,7 +188,7 @@
       );
     }
 
-    function buildInitialData() {
+    function buildLegacyTeams() {
       const micheleDaniel = makeTeam("Daniel Bell", makePerson("Daniel Bell", "CXM"), [makePerson("Juan Camilo Roa Munoz", "CXA")]);
       const micheleCallie = makeTeam("Callie Partain", makePerson("Callie Partain", "CXM"), [makePerson("Andy Hernandez", "CXA")]);
       const micheleJessica = makeTeam("Jessica Grayson", makePerson("Jessica Grayson", "CXM"), [makePerson("Lina Fajardo", "CXA")]);
@@ -270,6 +273,75 @@
 
       const markDiv = makeTeam("Mark Schacknies — Co-Founder", makePerson("Mark Schacknies", "Co-Founder"), [], [compliance, salesMarketing]);
       return [markDiv, jonathanDiv];
+    }
+
+    const MANAGEMENT_PATTERNS = [
+      /^mark(\s+schacknies)?$/i,
+      /^lee$/i,
+      /^jonathan(\s+spinetto)?$/i,
+      /^leo(\s+loomie)?$/i,
+      /^matt$/i,
+      /^jana(\s+\w+)?$/i,
+      /^christina(\s+\w+)?$/i,
+      /^hayle(\s+kluesner)?$/i,
+      /^shubi(\s+\w+)?$/i,
+      /^nicole(\s+\w+)?$/i,
+      /^obi(\s+\w+)?$/i,
+    ];
+
+    function isManagementPerson(name) {
+      if (!name || name === "TBD") return false;
+      const n = name.trim();
+      return MANAGEMENT_PATTERNS.some(re => re.test(n));
+    }
+
+    function findInRoster(roster, ...keys) {
+      const lowerKeys = keys.map(k => k.toLowerCase());
+      return roster.find(p => {
+        const n = p.name.toLowerCase().trim();
+        return lowerKeys.some(k => n === k || n.startsWith(k + " "));
+      }) || null;
+    }
+
+    function mgmtPerson(displayName, title, roster) {
+      const found = findInRoster(roster, displayName.split(" ")[0].toLowerCase(), displayName.toLowerCase());
+      return makePerson(displayName, title, found?.workingHours ?? null, false, found?.photoUrl ?? null);
+    }
+
+    function buildInitialData() {
+      const legacy = buildLegacyTeams();
+      const roster = flattenPeople(legacy);
+
+      const leeBranch = makeTeam("Chief of Staff", mgmtPerson("Lee", "Chief of Staff", roster), [], [
+        makeTeam("Sales", mgmtPerson("Leo Loomie", "Sales", roster)),
+        makeTeam("Success", mgmtPerson("Matt", "Success", roster)),
+        makeTeam("Ops", mgmtPerson("Jana", "Ops", roster)),
+        makeTeam("Pods — Christina", mgmtPerson("Christina", "Pods", roster)),
+        makeTeam("Pods — Hayle", mgmtPerson("Hayle Kluesner", "Pods", roster)),
+      ], null, "blue");
+
+      const jonathanBranch = makeTeam("COO", mgmtPerson("Jonathan Spinetto", "COO", roster), [], [
+        makeTeam("Platform", mgmtPerson("Shubi", "Platform", roster)),
+        makeTeam("Finance", mgmtPerson("Nicole", "Finance", roster)),
+        makeTeam("Risk", mgmtPerson("Obi", "Risk", roster)),
+      ], null, "violet");
+
+      const management = makeTeam("NFTY", mgmtPerson("Mark Schacknies", "CEO", roster), [], [leeBranch, jonathanBranch]);
+
+      const seen = new Set();
+      const unallocatedPeople = roster
+        .filter(p => !isManagementPerson(p.name))
+        .filter(p => {
+          const key = p.name.toLowerCase().trim();
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        })
+        .map(p => makePerson(p.name, p.title || p.role || "", p.workingHours ?? null, p.isTBD, p.photoUrl ?? null));
+
+      const unallocated = makeTeam("Unallocated", null, unallocatedPeople, [], null, "slate");
+
+      return [management, unallocated];
     }
 
     const updateTeamR = (list, id, upd) => list.map(t => t.id === id ? { ...t, ...upd } : { ...t, subteams: updateTeamR(t.subteams || [], id, upd) });
@@ -496,7 +568,7 @@
       return (
         <div className="print-only p-6">
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, borderBottom: "2px solid #1e3a5f", paddingBottom: 10 }}>
-            <div style={{ fontWeight: 700, fontSize: 20, color: "#1e3a5f", letterSpacing: 1 }}>NFTYDoor — Organization Chart</div>
+            <div style={{ fontWeight: 700, fontSize: 20, color: "#1e3a5f", letterSpacing: 1 }}>NFTY — By Aug 1</div>
             <div style={{ marginLeft: "auto", fontSize: 10, color: "#666" }}>{new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div>
           </div>
 
@@ -527,6 +599,45 @@
           <div style={{ marginTop: 14, fontSize: 8, color: "#999", textAlign: "center", borderTop: "1px solid #eee", paddingTop: 6 }}>
             NFTYDoor Organization Chart · ★ · Printed {new Date().toLocaleString()}
           </div>
+        </div>
+      );
+    }
+
+    function PasswordGate({ children }) {
+      const [authed, setAuthed] = useState(() => {
+        try { return sessionStorage.getItem(AUTH_KEY) === "1"; } catch { return false; }
+      });
+      const [pw, setPw] = useState("");
+      const [err, setErr] = useState(false);
+
+      const submit = (e) => {
+        e.preventDefault();
+        if (pw === SITE_PASSWORD) {
+          try { sessionStorage.setItem(AUTH_KEY, "1"); } catch { /* ignore */ }
+          setAuthed(true);
+          setErr(false);
+        } else {
+          setErr(true);
+        }
+      };
+
+      if (authed) return children;
+
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-4">
+          <form onSubmit={submit} className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 w-full max-w-sm space-y-4">
+            <div className="flex flex-col items-center gap-3">
+              <NFTYDoorLogo size={48} />
+              <h1 className="text-xl font-bold text-gray-800">NFTY — By Aug 1</h1>
+              <p className="text-sm text-gray-500 text-center">Enter the password to view the organization chart.</p>
+            </div>
+            <div className="relative">
+              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input type="password" autoFocus className={`w-full pl-9 pr-3 py-2.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 ${err ? "border-red-300" : "border-gray-200"}`} placeholder="Password" value={pw} onChange={e => { setPw(e.target.value); setErr(false); }} />
+            </div>
+            {err && <p className="text-xs text-red-600 text-center">Incorrect password. Please try again.</p>}
+            <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition">Unlock</button>
+          </form>
         </div>
       );
     }
@@ -698,6 +809,10 @@
         onToggleCollapse: (id) => set(ts => toggleCollapseR(ts, id)),
       };
 
+      const managementRoot = teams?.find(t => t.name === "NFTY") || teams?.[0];
+      const unallocatedTeam = teams?.find(t => t.name === "Unallocated");
+      const mgmtBranches = managementRoot?.subteams || [];
+
       return (
         <div className="min-h-screen w-full bg-gradient-to-br from-gray-50 to-gray-100">
           <style>{`
@@ -715,7 +830,7 @@
               <div className="flex items-center gap-3">
                 <NFTYDoorLogo size={32} />
                 <div>
-                  <h1 className="text-xl font-bold text-gray-800 tracking-tight">NFTYDoor</h1>
+                  <h1 className="text-xl font-bold text-gray-800 tracking-tight">NFTY — By Aug 1</h1>
                   <p className="text-xs text-gray-400 -mt-0.5">Organization Chart · {totalPeople} people</p>
                 </div>
               </div>
@@ -753,39 +868,48 @@
               <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white rounded-xl shadow-lg px-10 py-4 flex items-center gap-4">
                 <NFTYDoorLogo size={48} />
                 <div className="text-left">
-                  <p className="font-bold text-xl tracking-wide">NFTYDoor</p>
-                  <p className="text-xs opacity-80">Digital HELOCs for all.</p>
+                  <p className="font-bold text-xl tracking-wide">NFTY — By Aug 1</p>
+                  <p className="text-xs opacity-80">Management</p>
                 </div>
               </div>
             </div>
             <div className="flex justify-center"><div className="w-px h-6 bg-gray-300" /></div>
-            <div className="flex justify-center"><div className="h-px bg-gray-300 w-1/2" /></div>
+
+            {managementRoot?.head && (
+              <div className="flex justify-center mb-4">
+                <PersonCard person={managementRoot.head} accent={ACCENT_COLORS[0]}
+                  onUpdate={p => set(ts => updateTeamR(ts, managementRoot.id, { head: p }))}
+                  onDelete={() => set(ts => updateTeamR(ts, managementRoot.id, { head: null }))}
+                  isSearchMatch={searchIds.has(managementRoot.head.id)} />
+              </div>
+            )}
+
+            <div className="flex justify-center"><div className="w-px h-6 bg-gray-300" /></div>
+            <div className="flex justify-center"><div className="h-px bg-gray-300 w-2/3 max-w-4xl" /></div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-0 w-full">
-              {teams.map((team, i) => {
-                const isMarkSide = i === 0;
-                const grad = isMarkSide ? "from-blue-600 to-blue-700" : "from-violet-600 to-violet-700";
-                const border = isMarkSide ? "border-blue-200" : "border-violet-200";
-                const bg = isMarkSide ? "bg-blue-50/40" : "bg-violet-50/40";
-                const founderName = isMarkSide ? "Mark Schacknies" : "Jonathan Spinetto";
-                const visibleDirect = showOpenRoles ? (team.people || []) : (team.people || []).filter(p => !p.isTBD);
+              {mgmtBranches.map((branch, i) => {
+                const grad = i === 0 ? "from-blue-600 to-blue-700" : "from-violet-600 to-violet-700";
+                const border = i === 0 ? "border-blue-200" : "border-violet-200";
+                const bg = i === 0 ? "bg-blue-50/40" : "bg-violet-50/40";
 
                 return (
-                  <div key={team.id} className={`flex flex-col items-center rounded-2xl border ${border} ${bg} p-6 pt-0 overflow-x-auto min-w-0 w-full`}>
+                  <div key={branch.id} className={`flex flex-col items-center rounded-2xl border ${border} ${bg} p-6 pt-0 overflow-x-auto min-w-0 w-full`}>
                     <div className="w-px h-6 bg-gray-300" />
-                    <div className={`bg-gradient-to-r ${grad} text-white rounded-xl shadow-lg px-8 py-4 text-center mb-4 w-full max-w-xs`}>
-                      <p className="text-xs uppercase tracking-widest opacity-80 mb-1">Co-Founder</p>
-                      <p className="font-bold text-lg">{founderName}</p>
-                      <p className="text-xs opacity-70 mt-1">{countPeople(team, showOpenRoles) - (team.head ? 1 : 0)} people report in</p>
-                    </div>
+                    {branch.head && (
+                      <div className={`bg-gradient-to-r ${grad} text-white rounded-xl shadow-lg px-8 py-4 text-center mb-4 w-full max-w-xs`}>
+                        <p className="text-xs uppercase tracking-widest opacity-80 mb-1">{branch.head.title}</p>
+                        <p className="font-bold text-lg">{branch.head.name}</p>
+                      </div>
+                    )}
                     <div className="w-px h-4 bg-gray-300" />
 
-                    {team.subteams?.length > 0 && (
+                    {branch.subteams?.length > 0 && (
                       <>
-                        {team.subteams.length > 1 && <div className="flex justify-center w-full"><div className="h-px bg-gray-300" style={{ width: `${Math.min(team.subteams.length * 320, 900)}px` }} /></div>}
+                        {branch.subteams.length > 1 && <div className="flex justify-center w-full"><div className="h-px bg-gray-300" style={{ width: `${Math.min(branch.subteams.length * 320, 900)}px` }} /></div>}
                         <div className="flex flex-wrap gap-8 justify-center w-full">
-                          {team.subteams.map((st, si) => (
-                            <div key={st.id} className="flex flex-col items-center flex-1" style={{ minWidth: 288 }}>
+                          {branch.subteams.map((st, si) => (
+                            <div key={st.id} className="flex flex-col items-center" style={{ minWidth: 288 }}>
                               <div className="w-px h-4 bg-gray-300" />
                               <TeamNode team={st} accent={ACCENT_COLORS[(i * 4 + si) % ACCENT_COLORS.length]} depth={1} {...sharedNodeProps} />
                             </div>
@@ -793,26 +917,36 @@
                         </div>
                       </>
                     )}
-
-                    {visibleDirect.length > 0 && (
-                      <div className="flex flex-wrap gap-3 justify-center mt-4 w-full">
-                        {visibleDirect.map(p => (
-                          <PersonCard key={p.id} person={p} accent={ACCENT_COLORS[i % ACCENT_COLORS.length]}
-                            onUpdate={up => set(ts => updatePersonR(ts, team.id, up))}
-                            onDelete={id => set(ts => deletePersonR(ts, team.id, id))}
-                            isSearchMatch={searchIds.has(p.id)} />
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex gap-2 mt-4">
-                      <button onClick={() => set(ts => addSubteamR(ts, team.id))} className="text-xs flex items-center gap-1 text-gray-500 hover:text-emerald-600 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-emerald-50 transition"><Plus size={12} />Add Team</button>
-                      <button onClick={() => set(ts => addPersonR(ts, team.id))} className="text-xs flex items-center gap-1 text-gray-500 hover:text-blue-600 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-blue-50 transition"><Plus size={12} />Add Person</button>
-                    </div>
                   </div>
                 );
               })}
             </div>
+
+            {unallocatedTeam && (
+              <div className="w-full mt-12">
+                <div className="bg-white rounded-xl shadow-md border border-slate-300 overflow-hidden">
+                  <div className="bg-slate-600 text-white px-6 py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Users size={16} />
+                      <h2 className="font-semibold text-sm">Unallocated — {(unallocatedTeam.people || []).filter(p => showOpenRoles || !p.isTBD).length} people</h2>
+                    </div>
+                    <p className="text-xs opacity-80">Drag people into teams above when ready</p>
+                  </div>
+                  <div className="p-6 bg-slate-50"
+                    onDragOver={e => e.preventDefault()}
+                    onDrop={e => { e.preventDefault(); const pid = e.dataTransfer.getData("personId"); if (pid) handleMovePerson(pid, unallocatedTeam.id); }}>
+                    <div className="flex flex-wrap gap-3 justify-center">
+                      {(showOpenRoles ? (unallocatedTeam.people || []) : (unallocatedTeam.people || []).filter(p => !p.isTBD)).map(p => (
+                        <PersonCard key={p.id} person={p} accent={TEAM_COLORS.slate}
+                          onUpdate={up => set(ts => updatePersonR(ts, unallocatedTeam.id, up))}
+                          onDelete={id => set(ts => deletePersonR(ts, unallocatedTeam.id, id))}
+                          isSearchMatch={searchIds.has(p.id)} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {openRoles.length > 0 && (
               <div className="w-full max-w-3xl mx-auto mt-12 mb-4">
@@ -837,7 +971,7 @@
     }
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<NFTYOrgChart />);
+    root.render(<PasswordGate><NFTYOrgChart /></PasswordGate>);
   </script>
 </body>
 </html>
