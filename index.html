@@ -8,18 +8,15 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;color:#64748b">
+      Loading org chart…
+    </div>
+  </div>
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
-  <script>
-    Babel.registerPresets({
-      react: {
-        presets: [[Babel.availablePresets.react, { runtime: "classic" }]],
-      },
-    });
-  </script>
-  <script type="text/babel" data-presets="react">
+  <script src="https://unpkg.com/@babel/standalone@7.25.9/babel.min.js" crossorigin></script>
+  <script id="app-source" type="text/plain">
     const { useState, useEffect, useRef, useMemo } = React;
 
     const STORAGE_KEY = "nfty-org-chart-v2";
@@ -979,6 +976,37 @@
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
     root.render(<PasswordGate><NFTYOrgChart /></PasswordGate>);
+  </script>
+  <script>
+    (function () {
+      const showError = (message) => {
+        const root = document.getElementById('root');
+        if (!root) return;
+        root.innerHTML = '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,sans-serif"><div style="max-width:480px;text-align:center"><p style="font-weight:600;color:#b91c1c;margin:0 0 8px">Could not load org chart</p><p style="color:#64748b;font-size:14px;margin:0">' + message + '</p><p style="color:#94a3b8;font-size:12px;margin:16px 0 0">Try a hard refresh (Ctrl+Shift+R).</p></div></div>';
+      };
+
+      try {
+        if (!window.React || !window.ReactDOM || !window.Babel) {
+          showError('A required script failed to load. Check your network or ad blocker.');
+          return;
+        }
+
+        Babel.registerPresets({
+          react: {
+            presets: [[Babel.availablePresets.react, { runtime: 'classic', pragma: 'React.createElement', pragmaFrag: 'React.Fragment' }]],
+          },
+        });
+
+        const source = document.getElementById('app-source');
+        const compiled = Babel.transform(source.textContent, { presets: ['react'] }).code;
+        const script = document.createElement('script');
+        script.text = compiled;
+        document.body.appendChild(script);
+      } catch (err) {
+        console.error(err);
+        showError(err && err.message ? err.message : 'Unknown startup error');
+      }
+    })();
   </script>
 </body>
 </html>
