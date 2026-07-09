@@ -6,9 +6,11 @@
     "deploy": "npm run build && vercel",
     "deploy:prod": "npm run build && vercel --prod"
   },
-  "devDependencies": {
+  "dependencies": {
     "@babel/core": "^7.25.9",
-    "@babel/preset-react": "^7.25.9",
+    "@babel/preset-react": "^7.25.9"
+  },
+  "devDependencies": {
     "vercel": "^39.0.0"
   }
 }
