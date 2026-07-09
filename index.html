@@ -47,8 +47,7 @@
     const Eye = ({ size = 24, className }) => <svg {...svgProps(size, className)}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>;
     const EyeOff = ({ size = 24, className }) => <svg {...svgProps(size, className)}><path d="M10.73 5.08a10.07 10.07 0 0 1 11.27 11.27 1 1 0 0 1-.41 1.41"/><path d="M14 14a3 3 0 0 1-4.24-4.24"/><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M2 2l20 20"/></svg>;
     const Printer = ({ size = 24, className }) => <svg {...svgProps(size, className)}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/></svg>;
-    const Mail = ({ size = 24, className }) => <svg {...svgProps(size, className)}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>;
-    const MapPin = ({ size = 24, className }) => <svg {...svgProps(size, className)}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>;
+    const Clock = ({ size = 24, className }) => <svg {...svgProps(size, className)}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
     const Crown = ({ size = 24, className }) => {
       const p = svgProps(size, className);
       return <svg {...p} strokeWidth={size <= 16 ? 1.5 : 2}><path d="M2 17l4-9 4 5 2-8 2 8 4-5 4 9H2z"/></svg>;
@@ -88,27 +87,12 @@
       try {
         if (typeof localStorage === "undefined") return buildInitialData();
         const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : buildInitialData();
+        return raw ? normalizeTeams(JSON.parse(raw)) : buildInitialData();
       } catch {
         return buildInitialData();
       }
     }
     const uid = () => `id_${_id++}`;
-
-    function calcTenure(startDate) {
-      if (!startDate) return null;
-      const start = new Date(startDate);
-      const now = new Date();
-      if (isNaN(start.getTime()) || start > now) return null;
-      let years = now.getFullYear() - start.getFullYear();
-      let months = now.getMonth() - start.getMonth();
-      if (months < 0) { years--; months += 12; }
-      if (now.getDate() < start.getDate()) { months--; if (months < 0) { years--; months += 12; } }
-      if (years > 0 && months > 0) return `${years} yr${years > 1 ? "s" : ""}, ${months} mo${months > 1 ? "s" : ""}`;
-      if (years > 0) return `${years} yr${years > 1 ? "s" : ""}`;
-      if (months > 0) return `${months} mo${months > 1 ? "s" : ""}`;
-      return "< 1 mo";
-    }
 
     function countPeople(team, includeTBD = true) {
       let c = (team.people || []).filter(p => includeTBD || !p.isTBD).length;
@@ -132,16 +116,31 @@
       teams.forEach(t => {
         const mgr = t.head ? t.head.name : hiringManager;
         (t.people || []).forEach(p => {
-          if (p.isTBD) roles.push({ role: p.role, description: p.description, team: t.name, hiringManager: mgr || "Unassigned" });
+          if (p.isTBD) roles.push({ title: p.title || p.role || "", team: t.name, hiringManager: mgr || "Unassigned" });
         });
         if (t.subteams) roles = roles.concat(collectOpenRoles(t.subteams, mgr));
       });
       return roles;
     }
 
-    const makePerson = (name, role = "", startDate = null, description = "", isTBD = false, photoUrl = null, email = null, location = null) => ({
-      id: uid(), name, role, startDate, description, isTBD, photoUrl, email, location,
+    const makePerson = (name, title = "", workingHours = null, isTBD = false, photoUrl = null) => ({
+      id: uid(), name, title, workingHours, isTBD, photoUrl,
     });
+
+    function normalizePerson(p) {
+      if (!p) return p;
+      const { role, startDate, description, email, location, ...rest } = p;
+      return { ...rest, title: rest.title ?? role ?? "", workingHours: rest.workingHours ?? null };
+    }
+
+    function normalizeTeams(list) {
+      return list.map(t => ({
+        ...t,
+        head: t.head ? normalizePerson(t.head) : null,
+        people: (t.people || []).map(normalizePerson),
+        subteams: normalizeTeams(t.subteams || []),
+      }));
+    }
     const makeTeam = (name, head = null, people = [], subteams = [], logo = null, color = null) => ({
       id: uid(), name, head, people, subteams, collapsed: false, logo, color,
     });
@@ -187,38 +186,38 @@
     }
 
     function buildInitialData() {
-      const micheleDaniel = makeTeam("Daniel Bell", makePerson("Daniel Bell", "CXM", null, "Customer experience manager ensuring smooth HELOC processing"), [makePerson("Juan Camilo Roa Munoz", "CXA", null, "Customer experience associate handling borrower inquiries")]);
-      const micheleCallie = makeTeam("Callie Partain", makePerson("Callie Partain", "CXM", null, "Customer experience manager overseeing borrower interactions"), [makePerson("Andy Hernandez", "CXA", null, "Customer experience associate supporting loan process questions")]);
-      const micheleJessica = makeTeam("Jessica Grayson", makePerson("Jessica Grayson", "CXM", null, "Customer experience manager guiding borrowers through the digital process"), [makePerson("Lina Fajardo", "CXA", null, "Customer experience associate assisting borrowers through closing")]);
-      const micheleRebecca = makeTeam("Rebecca Slawter", makePerson("Rebecca Slawter", "CXM", null, "Customer experience manager focused on borrower satisfaction"), [makePerson("Isabella Yidi", "CXA", null, "Customer experience associate focused on borrower support")]);
-      const micheleAly = makeTeam("Aly", makePerson("Aly", "CXM", null, "Customer experience manager supporting borrower communications"), [makePerson("Shen Villavicencio", "CXA", null, "Customer experience associate handling borrower inquiries")]);
-      const cxMicheleTeam = makeTeam("CXM Team — Michele Farina", makePerson("Michele Farina", "CXM Team Lead", null, "Manages CX managers; ensures borrower satisfaction through the HELOC lifecycle"), [makePerson("Joferson Salo", "CX Assistant", null, "Goes by Joff. CX assistant supporting Michele's team")], [micheleDaniel, micheleCallie, micheleJessica, micheleRebecca, micheleAly]);
+      const micheleDaniel = makeTeam("Daniel Bell", makePerson("Daniel Bell", "CXM"), [makePerson("Juan Camilo Roa Munoz", "CXA")]);
+      const micheleCallie = makeTeam("Callie Partain", makePerson("Callie Partain", "CXM"), [makePerson("Andy Hernandez", "CXA")]);
+      const micheleJessica = makeTeam("Jessica Grayson", makePerson("Jessica Grayson", "CXM"), [makePerson("Lina Fajardo", "CXA")]);
+      const micheleRebecca = makeTeam("Rebecca Slawter", makePerson("Rebecca Slawter", "CXM"), [makePerson("Isabella Yidi", "CXA")]);
+      const micheleAly = makeTeam("Aly", makePerson("Aly", "CXM"), [makePerson("Shen Villavicencio", "CXA")]);
+      const cxMicheleTeam = makeTeam("CXM Team — Michele Farina", makePerson("Michele Farina", "CXM Team Lead"), [makePerson("Joferson Salo", "CX Assistant")], [micheleDaniel, micheleCallie, micheleJessica, micheleRebecca, micheleAly]);
 
-      const isidraLuis = makeTeam("Luis Miranda", makePerson("Luis Miranda", "CXM", null, "Customer experience manager overseeing borrower accounts"), [makePerson("Joseph Araque", "CXA", null, "Customer experience associate handling HELOC inquiries")]);
-      const isidraShanae = makeTeam("Shanae Mckenzie", makePerson("Shanae Mckenzie", "CXM", null, "Customer experience manager focused on borrower communications"), [makePerson("Laura Mancipe Robles", "CXA", null, "Customer experience associate assisting with loan documentation")]);
-      const isidraBriana = makeTeam("Briana Stockett", makePerson("Briana Stockett", "CXM", null, "Customer experience manager ensuring timely loan progress"), [makePerson("Alejandra Garcia", "CXA", null, "Customer experience associate supporting the digital lending flow")]);
-      const isidraTami = makeTeam("Tami Matthews", makePerson("Tami Matthews", "CXM", null, "Customer experience manager supporting lending partner relationships"), [makePerson("Isabel Carvajales", "CXA", null, "Customer experience associate handling borrower support")]);
-      const isidraKara = makeTeam("Kara", makePerson("Kara", "CXM", null, "Customer experience manager supporting borrower communications"), [makePerson("Sheena Ello", "CXA", null, "Customer experience associate focused on borrower support")]);
-      const cxIsidraTeam = makeTeam("CXM Team — Isidra Almaraz", makePerson("Isidra Almaraz", "CXM Team Lead", null, "Leads second CXM pod; drives quality and consistency in borrower experience"), [makePerson("Stephany Perez", "CX Assistant", null, "CX assistant supporting Isidra's team")], [isidraLuis, isidraShanae, isidraBriana, isidraTami, isidraKara]);
-      const cxTBDTeam = makeTeam("TBD — New CXM", makePerson("TBD", "CXM", null, "Open CXM role — pending hire", true), [makePerson("Mailyn Stor", "CXA", null, "Customer experience associate supporting HELOC applicants")]);
-      const cx = makeTeam("CX", makePerson("Hayle Kluesner", "CX Dept Head", null, "Leads the entire customer experience department"), [makePerson("Sharymynne Frilles", "CX - Closing Specialist", null, "Goes by Shari. Supports CX operations and team coordination")], [cxMicheleTeam, cxIsidraTeam, cxTBDTeam]);
+      const isidraLuis = makeTeam("Luis Miranda", makePerson("Luis Miranda", "CXM"), [makePerson("Joseph Araque", "CXA")]);
+      const isidraShanae = makeTeam("Shanae Mckenzie", makePerson("Shanae Mckenzie", "CXM"), [makePerson("Laura Mancipe Robles", "CXA")]);
+      const isidraBriana = makeTeam("Briana Stockett", makePerson("Briana Stockett", "CXM"), [makePerson("Alejandra Garcia", "CXA")]);
+      const isidraTami = makeTeam("Tami Matthews", makePerson("Tami Matthews", "CXM"), [makePerson("Isabel Carvajales", "CXA")]);
+      const isidraKara = makeTeam("Kara", makePerson("Kara", "CXM"), [makePerson("Sheena Ello", "CXA")]);
+      const cxIsidraTeam = makeTeam("CXM Team — Isidra Almaraz", makePerson("Isidra Almaraz", "CXM Team Lead"), [makePerson("Stephany Perez", "CX Assistant")], [isidraLuis, isidraShanae, isidraBriana, isidraTami, isidraKara]);
+      const cxTBDTeam = makeTeam("TBD — New CXM", makePerson("TBD", "CXM", null, true), [makePerson("Mailyn Stor", "CXA")]);
+      const cx = makeTeam("CX", makePerson("Hayle Kluesner", "CX Dept Head"), [makePerson("Sharymynne Frilles", "CX - Closing Specialist")], [cxMicheleTeam, cxIsidraTeam, cxTBDTeam]);
 
-      const concierge = makeTeam("Concierge", makePerson("Kate Hutchinson", "Head of Concierge", null, "Leads the concierge team"), [
-        makePerson("Ashley Fischer", "Product Trainer", null, "Trains lending partners on NFTYDoor's digital HELOC platform"),
-        makePerson("Princess Lagman", "HD TL", null, "Goes by Cess. Help desk team lead"),
-        makePerson("Kim Angeli Cristobal", "STM", null, "Senior team member supporting concierge operations"),
-        makePerson("AJ Pecson", "Concierge", null, "Supports lending partners through the HELOC origination process"),
-        makePerson("Jude Maureen Dowa", "Concierge", null, "Assists partners with platform navigation and loan questions"),
-        makePerson("Jeffrey Fernandez Canlas", "Concierge", null, "Provides hands-on support during HELOC applications"),
-        makePerson("Vladimir Daanoy", "Concierge", null, "Handles partner and borrower concierge requests"),
-        makePerson("Jan Santiago", "Concierge", null, "Supports loan origination workflow for lending partners"),
-        makePerson("Marilou Tumambo", "Concierge", null, "Assists with borrower and partner support inquiries"),
-        makePerson("Reniel Palaganas", "Concierge", null, "Concierge support for the digital lending process"),
-        makePerson("Gemivir De Vera", "Concierge", null, "Goes by Gem. Provides partner support and troubleshooting"),
-        makePerson("Angelique Israel", "Concierge", null, "Currently on maternity leave"),
+      const concierge = makeTeam("Concierge", makePerson("Kate Hutchinson", "Head of Concierge"), [
+        makePerson("Ashley Fischer", "Product Trainer"),
+        makePerson("Princess Lagman", "HD TL"),
+        makePerson("Kim Angeli Cristobal", "STM"),
+        makePerson("AJ Pecson", "Concierge"),
+        makePerson("Jude Maureen Dowa", "Concierge"),
+        makePerson("Jeffrey Fernandez Canlas", "Concierge"),
+        makePerson("Vladimir Daanoy", "Concierge"),
+        makePerson("Jan Santiago", "Concierge"),
+        makePerson("Marilou Tumambo", "Concierge"),
+        makePerson("Reniel Palaganas", "Concierge"),
+        makePerson("Gemivir De Vera", "Concierge"),
+        makePerson("Angelique Israel", "Concierge"),
       ]);
 
-      const pq = makeTeam("PQ", makePerson("Kara Schlitt", "PQ Team Lead", null, "Leads the pre-qualification team"), [
+      const pq = makeTeam("PQ", makePerson("Kara Schlitt", "PQ Team Lead"), [
         makePerson("Cadiah Arceo", "PQ Analyst"), makePerson("Jimmark Avillon", "PQ Analyst"), makePerson("Henry Del Rosario", "PQ Analyst"),
         makePerson("Julieta Navarro", "PQ Analyst"), makePerson("Leonelyn Valentin", "PQ Analyst"), makePerson("Juan Francisco Marticorena", "PQ Analyst"),
         makePerson("Sol Alderete", "PQ Analyst"), makePerson("Frank Angeles", "PQ Analyst"), makePerson("Katherine Marabulas", "PQ Analyst"),
@@ -229,11 +228,11 @@
       const dtiTeamB = makeTeam("Team B", null, [makePerson("Quinne Baxal", "DTI Analyst"), makePerson("Patima Pina Dungo", "DTI Analyst"), makePerson("Gean Carlo Piza", "DTI Analyst")]);
       const dtiTeamC = makeTeam("Team C", null, [makePerson("Cristine Joy Zerna", "DTI Analyst"), makePerson("Anna Karen Golpeo", "DTI Analyst"), makePerson("Sebastian D. Barinas", "DTI Analyst")]);
       const dtiTeamD = makeTeam("Team D", null, [makePerson("Rohit Jha", "DTI Analyst"), makePerson("Maria Manrique", "DTI Analyst"), makePerson("Ana Plaza", "DTI Analyst")]);
-      const dti = makeTeam("DTI", makePerson("Shanice Robinson Ellis", "Head of DTI", null, "Leads the document and title intake department"), [
+      const dti = makeTeam("DTI", makePerson("Shanice Robinson Ellis", "Head of DTI"), [
         makePerson("Berlito Derecho", "Shift Leader"), makePerson("LJ Basilio", "Shift Leader"), makePerson("Ishan Patnaik", "M2 Team Lead"),
       ], [dtiTeamA, dtiTeamB, dtiTeamC, dtiTeamD], null, "purple");
 
-      const title = makeTeam("Title", makePerson("Rylee Crawford", "Head of Title", null, "Leads title operations"), [
+      const title = makeTeam("Title", makePerson("Rylee Crawford", "Head of Title"), [
         makePerson("Katie", "Title Analyst"), makePerson("Ruth Abiegail Lalic", "Team Lead"), makePerson("Kaze De Jesus", "Sr. Title Analyst"),
         makePerson("Joshua Singian", "Sr. Title Analyst"), makePerson("Jonah Rose Surla", "Title Analyst"), makePerson("Jenny Baluyut", "Title Analyst"),
         makePerson("Kris Maniaul", "Title Analyst"), makePerson("Santiago Maldonado", "Title Analyst"), makePerson("Ivan Hugh Manalili", "Title Analyst"),
@@ -241,16 +240,16 @@
         makePerson("Anne Cristel Larin Corpuz", "Title Analyst"), makePerson("Alyca Rondina", "Title Analyst"),
       ], [], null, "yellow");
 
-      const postClosing = makeTeam("Post Closing", makePerson("Brieauna Williams", "Head of Post Closing", null, "Goes by Brie. Leads post-closing operations"), [
+      const postClosing = makeTeam("Post Closing", makePerson("Brieauna Williams", "Head of Post Closing"), [
         makePerson("Kei Masuzawa", "Post Closing Analyst"), makePerson("Constanza Rotela", "Post Closing Analyst"),
         makePerson("Nicolas Rois", "Post Closing Analyst"), makePerson("Sarah Jane Jumawan", "Post Closing Analyst"), makePerson("Silvia Huerta", "Post Closing Analyst"),
       ], [], null, "pink");
 
-      const operations = makeTeam("Operations", makePerson("Linda Christensen", "Head of Ops", null, "Leads all NFTYDoor operations; oversees CX, DTI, title, and post-closing teams"), [], [pq, cx, dti, title, postClosing]);
+      const operations = makeTeam("Operations", makePerson("Linda Christensen", "Head of Ops"), [], [pq, cx, dti, title, postClosing]);
 
-      const product = makeTeam("Product", makePerson("David Talbird", "Head of Product", null, "Leads product strategy and development"), [
+      const product = makeTeam("Product", makePerson("David Talbird", "Head of Product"), [
         makePerson("Lauren Card", "ProdOps"), makePerson("Ryan Morrison", "AI Strategist"), makePerson("Vakhtang", "Engineer"),
-        makePerson("TBD", "Product Engineer", null, "Open role", true), makePerson("TBD", "Product Engineer", null, "Open role", true), makePerson("TBD", "Product Engineer", null, "Open role", true),
+        makePerson("TBD", "Product Engineer", null, true), makePerson("TBD", "Product Engineer", null, true), makePerson("TBD", "Product Engineer", null, true),
       ]);
       const crombie = makeTeam("Crombie (External Partner)", null, [
         makePerson("Guillermo Plank", "Project Manager"), makePerson("Paula De Grazia", "Project Manager"),
@@ -260,13 +259,13 @@
 
       const jonathanDiv = makeTeam("Jonathan Spinetto — Co-Founder", makePerson("Jonathan Spinetto", "Co-Founder"), [], [product, operations]);
 
-      const compliance = makeTeam("Compliance", makePerson("Dom Savino", "EVP, Financial Products", null, "Head of Compliance"), [
-        makePerson("Julie Treloar", "Director of Risk & Compliance"), makePerson("TBD", "Treasury Analyst", null, "Open role", true),
+      const compliance = makeTeam("Compliance", makePerson("Dom Savino", "EVP, Financial Products"), [
+        makePerson("Julie Treloar", "Director of Risk & Compliance"), makePerson("TBD", "Treasury Analyst", null, true),
       ]);
 
-      const salesMarketing = makeTeam("Sales & Marketing", makePerson("Leo Loomie", "Chief Revenue Officer", null, "Leads sales and marketing"), [
+      const salesMarketing = makeTeam("Sales & Marketing", makePerson("Leo Loomie", "Chief Revenue Officer"), [
         makePerson("Seth Cohen", "Sales"), makePerson("Stephanie Bunting", "Marketing"),
-        makePerson("TBD", "Onboarding", null, "Open role", true), makePerson("TBD", "Onboarding", null, "Open role", true),
+        makePerson("TBD", "Onboarding", null, true), makePerson("TBD", "Onboarding", null, true),
       ], [concierge]);
 
       const markDiv = makeTeam("Mark Schacknies — Co-Founder", makePerson("Mark Schacknies", "Co-Founder"), [], [compliance, salesMarketing]);
@@ -303,29 +302,25 @@
 
     function PersonCard({ person, accent, onUpdate, onDelete, isSearchMatch }) {
       const [editing, setEditing] = useState(false);
-      const [draft, setDraft] = useState({ ...person });
-      const tenure = calcTenure(person.startDate);
+      const [draft, setDraft] = useState(() => normalizePerson({ ...person }));
       const isTBD = person.isTBD;
+      const title = person.title || person.role || "";
 
-      const save = () => { onUpdate({ ...draft }); setEditing(false); };
-      const cancel = () => { setDraft({ ...person }); setEditing(false); };
+      const save = () => { onUpdate(normalizePerson({ ...draft })); setEditing(false); };
+      const cancel = () => { setDraft(normalizePerson({ ...person })); setEditing(false); };
 
       if (editing) {
         return (
           <div className={`bg-white rounded-lg shadow-md border-2 ${accent.border} p-4 w-64 space-y-2`} onClick={e => e.stopPropagation()}>
             <input className="w-full border rounded px-2 py-1 text-sm" placeholder="Name" value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} />
-            <input className="w-full border rounded px-2 py-1 text-sm" placeholder="Role / Title" value={draft.role} onChange={e => setDraft({ ...draft, role: e.target.value })} />
+            <input className="w-full border rounded px-2 py-1 text-sm" placeholder="Title" value={draft.title || ""} onChange={e => setDraft({ ...draft, title: e.target.value })} />
             <div className={`w-full border-2 border-dashed rounded px-2 py-3 text-center text-xs cursor-pointer transition ${draft.photoUrl ? "border-green-300 bg-green-50" : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"}`}
               onDragOver={e => e.preventDefault()}
               onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f?.type.startsWith("image/")) { const r = new FileReader(); r.onload = ev => setDraft(d => ({ ...d, photoUrl: ev.target.result })); r.readAsDataURL(f); } }}
               onClick={() => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/*"; i.onchange = e => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = ev => setDraft(d => ({ ...d, photoUrl: ev.target.result })); r.readAsDataURL(f); } }; i.click(); }}>
-              {draft.photoUrl ? <div className="flex items-center justify-center gap-2"><img src={draft.photoUrl} className="w-10 h-10 rounded-full object-cover" /><span className="text-green-700">Photo added</span><button onClick={e => { e.stopPropagation(); setDraft(d => ({ ...d, photoUrl: null })); }} className="p-0.5 rounded hover:bg-red-100"><X size={12} className="text-red-400" /></button></div> : <span className="text-gray-400">Drop photo or click to browse</span>}
+              {draft.photoUrl ? <div className="flex items-center justify-center gap-2"><img src={draft.photoUrl} className="w-10 h-10 rounded-full object-cover" alt="" /><span className="text-green-700">Photo added</span><button onClick={e => { e.stopPropagation(); setDraft(d => ({ ...d, photoUrl: null })); }} className="p-0.5 rounded hover:bg-red-100"><X size={12} className="text-red-400" /></button></div> : <span className="text-gray-400">Drop photo or click to browse</span>}
             </div>
-            <input className="w-full border rounded px-2 py-1 text-sm" placeholder="Email" value={draft.email || ""} onChange={e => setDraft({ ...draft, email: e.target.value || null })} />
-            <input className="w-full border rounded px-2 py-1 text-sm" placeholder="Location" value={draft.location || ""} onChange={e => setDraft({ ...draft, location: e.target.value || null })} />
-            <input className="w-full border rounded px-2 py-1 text-sm" type="date" value={draft.startDate || ""} onChange={e => setDraft({ ...draft, startDate: e.target.value || null })} />
-            <textarea className="w-full border rounded px-2 py-1 text-sm h-16 resize-none" placeholder="Description" value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })} />
-            <label className="flex items-center gap-2 text-xs text-gray-500"><input type="checkbox" checked={draft.isTBD} onChange={e => setDraft({ ...draft, isTBD: e.target.checked })} /> TBD / Open Role</label>
+            <input className="w-full border rounded px-2 py-1 text-sm" placeholder="Working hours (e.g. Mon–Fri 9am–5pm)" value={draft.workingHours || ""} onChange={e => setDraft({ ...draft, workingHours: e.target.value || null })} />
             <div className="flex gap-2 justify-end">
               <button onClick={cancel} className="p-1 rounded hover:bg-gray-100"><X size={16} /></button>
               <button onClick={save} className="p-1 rounded bg-blue-600 text-white hover:bg-blue-700"><Check size={16} /></button>
@@ -342,11 +337,14 @@
           onClick={() => setEditing(true)}
         >
           {isTBD && <div className="absolute top-1 right-1"><AlertCircle size={14} className="text-gray-400" /></div>}
-          <div className="flex items-start gap-2.5 mb-1">
+          <div className="flex items-start gap-2.5">
             <div className="shrink-0 mt-0.5"><Avatar person={person} size={34} accent={accent} /></div>
             <div className="flex-1 min-w-0">
               <p className={`font-semibold text-sm truncate ${isTBD ? "text-gray-400 italic" : "text-gray-800"}`}>{person.name}</p>
-              {person.role && <p className={`text-xs ${isTBD ? "text-gray-400" : "text-gray-500"}`}>{person.role}</p>}
+              {title && <p className={`text-xs truncate ${isTBD ? "text-gray-400" : "text-gray-500"}`}>{title}</p>}
+              {person.workingHours && (
+                <p className="text-xs text-gray-400 truncate flex items-center gap-1 mt-0.5"><Clock size={10} className="shrink-0" />{person.workingHours}</p>
+              )}
             </div>
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1 shrink-0">
               <button onClick={e => { e.stopPropagation(); setEditing(true); }} className="p-0.5 rounded hover:bg-gray-100"><Edit3 size={12} className="text-gray-400" /></button>
@@ -354,16 +352,6 @@
               <GripVertical size={12} className="text-gray-300" />
             </div>
           </div>
-          {tenure
-            ? <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${accent.badge} font-medium mb-1`}>{tenure}</span>
-            : <span className="inline-block text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 mb-1">{isTBD ? "Open Role" : "Start date TBD"}</span>}
-          {(person.email || person.location) && (
-            <div className="flex flex-col gap-0.5 mt-1">
-              {person.email && <p className="text-xs text-gray-400 truncate flex items-center gap-1"><Mail size={10} className="shrink-0" />{person.email}</p>}
-              {person.location && <p className="text-xs text-gray-400 truncate flex items-center gap-1"><MapPin size={10} className="shrink-0" />{person.location}</p>}
-            </div>
-          )}
-          <p className="text-xs text-gray-500 mt-1 line-clamp-2">{person.description || (isTBD ? "Open position — to be filled" : "Click to add description")}</p>
         </div>
       );
     }
@@ -480,10 +468,10 @@
       teams.forEach(t => {
         const deptName = dept || t.name;
         if (t.head && !t.head.isTBD) {
-          rows.push({ name: t.head.name, role: t.head.role || "", dept: t.name, reportsTo, isHead: true });
+          rows.push({ name: t.head.name, title: t.head.title || t.head.role || "", dept: t.name, reportsTo, isHead: true });
         }
         (t.people || []).filter(p => !p.isTBD).forEach(p => {
-          rows.push({ name: p.name, role: p.role || "", dept: t.name, reportsTo: t.head ? t.head.name : reportsTo, isHead: false });
+          rows.push({ name: p.name, title: p.title || p.role || "", dept: t.name, reportsTo: t.head ? t.head.name : reportsTo, isHead: false });
         });
         buildPrintRows(t.subteams || [], deptName, t.head ? t.head.name : reportsTo, rows);
       });
@@ -495,8 +483,8 @@
         const map = {};
         const walkTop = (list, topDept) => list.forEach(t => {
           const key = topDept || t.name;
-          if (t.head && !t.head.isTBD) { (map[key] = map[key] || []).push({ name: t.head.name, role: t.head.role || "", team: t.name, reportsTo: "", isHead: true }); }
-          (t.people || []).filter(p => !p.isTBD).forEach(p => { (map[key] = map[key] || []).push({ name: p.name, role: p.role || "", team: t.name, reportsTo: t.head?.name || "", isHead: false }); });
+          if (t.head && !t.head.isTBD) { (map[key] = map[key] || []).push({ name: t.head.name, title: t.head.title || t.head.role || "", team: t.name, reportsTo: "", isHead: true }); }
+          (t.people || []).filter(p => !p.isTBD).forEach(p => { (map[key] = map[key] || []).push({ name: p.name, title: p.title || p.role || "", team: t.name, reportsTo: t.head?.name || "", isHead: false }); });
           walkTop(t.subteams || [], key);
         });
         teams.forEach(div => walkTop(div.subteams || [], ""));
@@ -568,7 +556,7 @@
             return;
           }
           if (data && data.payload != null) {
-            setTeams(data.payload);
+            setTeams(normalizeTeams(data.payload));
             try {
               if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, JSON.stringify(data.payload));
             } catch { /* ignore */ }
@@ -592,8 +580,9 @@
         setSaveStatus("saving");
         if (saveTimer.current) clearTimeout(saveTimer.current);
         saveTimer.current = setTimeout(() => {
+          const normalized = normalizeTeams(teams);
           try {
-            if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, JSON.stringify(teams));
+            if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
             setSaveStatus("saved");
           } catch {
             setSaveStatus("error");
@@ -602,7 +591,7 @@
           if (sb && cloudState === "ready") {
             sb.from("org_chart_state")
               .upsert(
-                { id: ORG_CHART_ROW_ID, payload: teams, updated_at: new Date().toISOString() },
+                { id: ORG_CHART_ROW_ID, payload: normalized, updated_at: new Date().toISOString() },
                 { onConflict: "id" }
               )
               .then(({ error }) => {
@@ -647,7 +636,10 @@
       const searchIds = useMemo(() => {
         if (!teams || !search.trim()) return new Set();
         const q = search.toLowerCase();
-        return new Set(flattenPeople(teams).filter(p => p.name.toLowerCase().includes(q) || (p.role || "").toLowerCase().includes(q) || (p.email || "").toLowerCase().includes(q) || (p.location || "").toLowerCase().includes(q)).map(p => p.id));
+        return new Set(flattenPeople(teams).filter(p => {
+          const title = p.title || p.role || "";
+          return p.name.toLowerCase().includes(q) || title.toLowerCase().includes(q) || (p.workingHours || "").toLowerCase().includes(q);
+        }).map(p => p.id));
       }, [search, teams]);
 
       const openRoles = useMemo(() => teams ? collectOpenRoles(teams) : [], [teams]);
@@ -663,11 +655,11 @@
         navigator.clipboard.writeText(JSON.stringify(teams, null, 2)).then(() => { setExportMsg("Copied!"); setTimeout(() => setExportMsg(""), 2000); }).catch(() => setExportMsg("Copy failed"));
       };
       const handleExportCSV = () => {
-        const rows = [["Name", "Role", "Team", "Reports To", "Email", "Location", "Status"]];
+        const rows = [["Name", "Title", "Working Hours", "Team", "Reports To", "Status"]];
         const walk = (list, reportsTo) => list.forEach(t => {
           const mgr = t.head ? t.head.name : reportsTo;
-          if (t.head) rows.push([t.head.name, t.head.role || "", t.name, reportsTo || "", t.head.email || "", t.head.location || "", t.head.isTBD ? "Open Role" : "Filled"]);
-          (t.people || []).forEach(p => rows.push([p.name, p.role || "", t.name, mgr || "", p.email || "", p.location || "", p.isTBD ? "Open Role" : "Filled"]));
+          if (t.head) rows.push([t.head.name, t.head.title || t.head.role || "", t.head.workingHours || "", t.name, reportsTo || "", t.head.isTBD ? "Open Role" : "Filled"]);
+          (t.people || []).forEach(p => rows.push([p.name, p.title || p.role || "", p.workingHours || "", t.name, mgr || "", p.isTBD ? "Open Role" : "Filled"]));
           walk(t.subteams || [], mgr);
         });
         walk(teams, "");
@@ -729,7 +721,7 @@
               </div>
               <div className="flex-1 min-w-[200px] max-w-md relative">
                 <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                <input className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Search people by name or role…" value={search} onChange={e => setSearch(e.target.value)} />
+                <input className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="Search by name, title, or hours…" value={search} onChange={e => setSearch(e.target.value)} />
                 {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"><X size={14} /></button>}
               </div>
               {search && searchIds.size > 0 && <span className="text-xs text-blue-600 font-medium">{searchIds.size} match{searchIds.size !== 1 ? "es" : ""}</span>}
@@ -831,7 +823,7 @@
                   </div>
                   <table className="w-full text-sm">
                     <thead><tr className="border-b border-gray-100 text-left text-gray-500"><th className="px-6 py-2 font-medium">#</th><th className="px-6 py-2 font-medium">Position</th><th className="px-6 py-2 font-medium">Team</th><th className="px-6 py-2 font-medium">Hiring Manager</th></tr></thead>
-                    <tbody>{openRoles.map((r, idx) => <tr key={idx} className="border-b border-gray-50 hover:bg-amber-50/50"><td className="px-6 py-2 text-gray-400">{idx + 1}</td><td className="px-6 py-2 font-medium text-gray-800">{r.role}</td><td className="px-6 py-2 text-gray-600">{r.team}</td><td className="px-6 py-2 text-gray-600">{r.hiringManager}</td></tr>)}</tbody>
+                    <tbody>{openRoles.map((r, idx) => <tr key={idx} className="border-b border-gray-50 hover:bg-amber-50/50"><td className="px-6 py-2 text-gray-400">{idx + 1}</td><td className="px-6 py-2 font-medium text-gray-800">{r.title}</td><td className="px-6 py-2 text-gray-600">{r.team}</td><td className="px-6 py-2 text-gray-600">{r.hiringManager}</td></tr>)}</tbody>
                   </table>
                 </div>
               </div>
