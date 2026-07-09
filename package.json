@@ -2,8 +2,13 @@
   "name": "vercel-static",
   "private": true,
   "scripts": {
-    "deploy": "vercel",
-    "deploy:prod": "vercel --prod"
+    "compile": "node scripts/build.js",
+    "deploy": "npm run compile && vercel",
+    "deploy:prod": "npm run compile && vercel --prod"
+  },
+  "dependencies": {
+    "@babel/core": "^7.25.9",
+    "@babel/preset-react": "^7.25.9"
   },
   "devDependencies": {
     "vercel": "^39.0.0"
