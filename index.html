@@ -41,7 +41,7 @@ const {
   useRef,
   useMemo
 } = React;
-const STORAGE_KEY = "nfty-org-chart-v5";
+const STORAGE_KEY = "nfty-org-chart-v6";
 const AUTH_KEY = "nfty-org-auth";
 const SITE_PASSWORD = "NFTYDoorPODs";
 const ORG_CHART_API = "/api/org-chart";
@@ -701,7 +701,7 @@ function buildInitialData() {
   const p = (name, title, ...keys) => fromRoster(roster, name, title, ...keys);
   const capitalMarkets = makeTeam("Capital Markets", p("Dom Savino", "EVP, Financial Products", "dom"), [p("Drew Santorella-Doyle", "Capital Markets", "drew", "santorella")], [], null, "amber");
   const advisor = makeTeam("Strategic Advisor", p("Matt", "Strategic Advisor"), [], [], null, "slate");
-  const jonathanBranch = makeTeam("COO", p("Jonathan Spinetto", "COO, Co-Founder"), [], [makeTeam("Product", p("Erica Sands", "Head of Product", "erica"), [], [], null, "cyan"), makeTeam("Engineering", p("Shubi", "Head of Engineering"), [], [], null, "indigo"), makeTeam("Finance", p("Nicole", "Head of Finance"), [], [], null, "emerald"), makeTeam("Risk", p("Obi", "Head of Risk"), [], [], null, "rose"), capitalMarkets, advisor], null, "violet");
+  const jonathanBranch = makeTeam("COO", p("Jonathan Spinetto", "COO, Co-Founder"), [], [makeTeam("Engineering", p("Shubi", "Head of Engineering"), [], [makeTeam("Product", p("Erica Sands", "Head of Product", "erica"), [], [], null, "cyan")], null, "indigo"), makeTeam("Finance", p("Nicole", "Head of Finance"), [], [], null, "emerald"), makeTeam("Risk", p("Obi", "Head of Risk"), [], [], null, "rose"), capitalMarkets, advisor], null, "violet");
   const sales = makeTeam("Sales", p("Leo Loomie", "Chief Revenue Officer", "leo"), [p("Stephanie Bunting", "Sales Marketing", "stephanie"), p("Seth Cohen", "Business Development", "seth"), p("Stacie", "Business Development")], [], null, "blue");
   const salesSuccess = makeTeam("Sales Success", p("Tim Rowe", "SVP, Sales Success", "tim"), [], [], null, "cyan");
   const clientSuccess = makeTeam("Client Success", p("Linda Christensen", "Client Success", "linda"), [p("Christina", "Client Success"), p("Brandi", "Client Success"), p("Ebony", "Onboarding"), p("Becky", "Onboarding"), p("Ruthie", "Onboarding"), p("Alex", "Client Success Marketing"), p("Lane", "Training & Education"), p("Ashley Fischer", "Training & Education", "ashley")], [], null, "green");
