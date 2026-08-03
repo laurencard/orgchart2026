@@ -2,6 +2,13 @@ const { put, list } = require("@vercel/blob");
 
 const BLOB_PATH = "org-chart/aug-2026.json";
 
+function hasBlobCredentials() {
+  if (process.env.BLOB_READ_WRITE_TOKEN) return true;
+  // OIDC auth (default for newly connected Blob stores)
+  if (process.env.BLOB_STORE_ID && process.env.VERCEL_OIDC_TOKEN) return true;
+  return false;
+}
+
 function send(res, status, body) {
   res.statusCode = status;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -38,10 +45,11 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!hasBlobCredentials()) {
     send(res, 503, {
       error: "not_configured",
-      message: "Create a Vercel Blob store for this project (Storage → Blob). BLOB_READ_WRITE_TOKEN is set automatically.",
+      message:
+        "Connect a Vercel Blob store to this project (Storage → Blob). Newer stores use BLOB_STORE_ID + VERCEL_OIDC_TOKEN.",
     });
     return;
   }
@@ -79,7 +87,6 @@ module.exports = async function handler(req, res) {
         addRandomSuffix: false,
         allowOverwrite: true,
         contentType: "application/json",
-        token: process.env.BLOB_READ_WRITE_TOKEN,
       });
       send(res, 200, { ok: true, updated_at: stored.updated_at });
       return;
