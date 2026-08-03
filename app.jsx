@@ -1,6 +1,6 @@
     const { useState, useEffect, useRef, useMemo } = React;
 
-    const STORAGE_KEY = "nfty-org-chart-v3";
+    const STORAGE_KEY = "nfty-org-chart-v4";
     const AUTH_KEY = "nfty-org-auth";
     const SITE_PASSWORD = "NFTYDoorPODs";
     const ORG_CHART_API = "/api/org-chart";
@@ -325,14 +325,7 @@
       const roster = flattenPeople(legacy);
       const p = (name, title, ...keys) => fromRoster(roster, name, title, ...keys);
 
-      // CEO direct reports
-      const jonathanBranch = makeTeam("COO", p("Jonathan Spinetto", "COO, Co-Founder"), [], [
-        makeTeam("Product", p("Erica Sands", "Head of Product", "erica"), [], [], null, "cyan"),
-        makeTeam("Engineering", p("Shubi", "Head of Engineering"), [], [], null, "indigo"),
-        makeTeam("Finance", p("Nicole", "Head of Finance"), [], [], null, "emerald"),
-        makeTeam("Risk", p("Obi", "Head of Risk"), [], [], null, "rose"),
-      ], null, "violet");
-
+      // CEO direct reports: COO + Chief of Staff
       const capitalMarkets = makeTeam(
         "Capital Markets",
         p("Dom Savino", "EVP, Financial Products", "dom"),
@@ -341,6 +334,17 @@
         null,
         "amber"
       );
+
+      const advisor = makeTeam("Strategic Advisor", p("Matt", "Strategic Advisor"), [], [], null, "slate");
+
+      const jonathanBranch = makeTeam("COO", p("Jonathan Spinetto", "COO, Co-Founder"), [], [
+        makeTeam("Product", p("Erica Sands", "Head of Product", "erica"), [], [], null, "cyan"),
+        makeTeam("Engineering", p("Shubi", "Head of Engineering"), [], [], null, "indigo"),
+        makeTeam("Finance", p("Nicole", "Head of Finance"), [], [], null, "emerald"),
+        makeTeam("Risk", p("Obi", "Head of Risk"), [], [], null, "rose"),
+        capitalMarkets,
+        advisor,
+      ], null, "violet");
 
       const sales = makeTeam(
         "Sales",
@@ -396,13 +400,11 @@
         opsExcellence,
       ], null, "blue");
 
-      const advisor = makeTeam("Strategic Advisor", p("Matt", "Strategic Advisor to CEO"), [], [], null, "slate");
-
       const management = makeTeam(
         "NFTY",
         p("Mark Schacknies", "CEO, Co-Founder", "mark"),
         [],
-        [jonathanBranch, leeBranch, capitalMarkets, advisor],
+        [jonathanBranch, leeBranch],
         null,
         "blue"
       );
