@@ -1,12 +1,20 @@
-const { put, get } = require("@vercel/blob");
-
 const BLOB_PATH = "org-chart/aug-2026.json";
+const BLOB_API = "https://vercel.com/api/blob";
+const API_VERSION = "7";
 
-function hasBlobCredentials() {
-  if (process.env.BLOB_READ_WRITE_TOKEN) return true;
-  // OIDC auth (default for newly connected Blob stores)
-  if (process.env.BLOB_STORE_ID && process.env.VERCEL_OIDC_TOKEN) return true;
-  return false;
+function token() {
+  return process.env.BLOB_READ_WRITE_TOKEN || "";
+}
+
+function storeHost() {
+  // token shape: vercel_blob_rw_<STOREID>_<SECRET>
+  const parts = token().split("_");
+  const storeId = parts[3] || "";
+  return `${storeId.toLowerCase()}.private.blob.vercel-storage.com`;
+}
+
+function blobObjectUrl() {
+  return `https://${storeHost()}/${BLOB_PATH}`;
 }
 
 function send(res, status, body) {
@@ -30,20 +38,40 @@ async function readBody(req) {
 }
 
 async function readStoredPayload() {
-  const result = await get(BLOB_PATH, { access: "private", useCache: false });
-  if (!result || result.statusCode === 404) return null;
-  if (result.statusCode !== 200) {
-    const err = new Error(`blob_get_failed_${result.statusCode}`);
-    err.statusCode = result.statusCode;
+  const upstream = await fetch(blobObjectUrl(), {
+    headers: { Authorization: `Bearer ${token()}` },
+    cache: "no-store",
+  });
+  if (upstream.status === 404) return null;
+  if (!upstream.ok) {
+    const err = new Error(`blob_fetch_failed_${upstream.status}`);
+    err.statusCode = upstream.status;
     throw err;
   }
-  // Prefer stream → text for JSON; fall back to result fields if present.
-  if (result.stream) {
-    const text = await new Response(result.stream).text();
-    return text ? JSON.parse(text) : null;
+  return upstream.json();
+}
+
+async function writeStoredPayload(stored) {
+  const params = new URLSearchParams({ pathname: BLOB_PATH });
+  const upstream = await fetch(`${BLOB_API}/?${params}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token()}`,
+      "x-api-version": API_VERSION,
+      "x-vercel-blob-access": "private",
+      "x-add-random-suffix": "0",
+      "x-allow-overwrite": "1",
+      "x-content-type": "application/json",
+    },
+    body: JSON.stringify(stored),
+  });
+  if (!upstream.ok) {
+    const text = await upstream.text().catch(() => "");
+    const err = new Error(`blob_put_failed_${upstream.status}${text ? `: ${text}` : ""}`);
+    err.statusCode = upstream.status;
+    throw err;
   }
-  if (typeof result.body === "string") return JSON.parse(result.body);
-  return null;
+  return upstream.json().catch(() => ({}));
 }
 
 module.exports = async function handler(req, res) {
@@ -57,11 +85,11 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  if (!hasBlobCredentials()) {
+  if (!token()) {
     send(res, 503, {
       error: "not_configured",
       message:
-        "Connect Blob store nfty-org-chart-blob to this Vercel project (Storage → connect for Production + Preview).",
+        "Connect Blob store nfty-org-chart-blob to this Vercel project (Storage → Projects → Production + Preview).",
     });
     return;
   }
@@ -88,12 +116,7 @@ module.exports = async function handler(req, res) {
         payload: body.payload,
         updated_at: new Date().toISOString(),
       };
-      await put(BLOB_PATH, JSON.stringify(stored), {
-        access: "private",
-        addRandomSuffix: false,
-        allowOverwrite: true,
-        contentType: "application/json",
-      });
+      await writeStoredPayload(stored);
       send(res, 200, { ok: true, updated_at: stored.updated_at });
       return;
     }

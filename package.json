@@ -8,8 +8,7 @@
   },
   "dependencies": {
     "@babel/core": "^7.25.9",
-    "@babel/preset-react": "^7.25.9",
-    "@vercel/blob": "^2.6.1"
+    "@babel/preset-react": "^7.25.9"
   },
   "devDependencies": {
     "vercel": "^39.0.0"
