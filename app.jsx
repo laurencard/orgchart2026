@@ -1,6 +1,6 @@
     const { useState, useEffect, useRef, useMemo } = React;
 
-    const STORAGE_KEY = "nfty-org-chart-v6";
+    const STORAGE_KEY = "nfty-org-chart-v7";
     const AUTH_KEY = "nfty-org-auth";
     const SITE_PASSWORD = "NFTYDoorPODs";
     const ORG_CHART_API = "/api/org-chart";
@@ -278,7 +278,7 @@
       /^leo(\s+loomie)?$/i,
       /^stephanie(\s+bunting)?$/i,
       /^seth(\s+cohen)?$/i,
-      /^stacie(\s+\w+)?$/i,
+      /^stacie(\s+cappadonna)?$/i,
       /^tim(\s+rowe)?$/i,
       /^linda(\s+christensen)?$/i,
       /^christina(\s+\w+)?$/i,
@@ -353,7 +353,7 @@
         [
           p("Stephanie Bunting", "Sales Marketing", "stephanie"),
           p("Seth Cohen", "Business Development", "seth"),
-          p("Stacie", "Business Development"),
+          p("Stacie Cappadonna", "Business Development", "stacie"),
         ],
         [],
         null,
@@ -380,7 +380,7 @@
         "green"
       );
 
-      const pods = makeTeam("PODs", p("Hayle Kluesner", "PODs Manager", "hayle"), [], [], null, "orange");
+      const pods = buildPodsUnderHayle(roster, p);
 
       const opsExcellence = makeTeam("Operational Excellence", p("Jana", "Operational Excellence"), [], [
         pods,
@@ -410,9 +410,10 @@
         "blue"
       );
 
+      const placedNames = collectPersonNames([management]);
       const seen = new Set();
       const unallocatedPeople = roster
-        .filter(person => !isPlacedPerson(person.name))
+        .filter(person => !isNamePlaced(person.name, placedNames) && !isPlacedPerson(person.name))
         .filter(person => {
           const key = person.name.toLowerCase().trim();
           if (seen.has(key)) return false;
@@ -424,6 +425,134 @@
       const unallocated = makeTeam("Unallocated", null, unallocatedPeople, [], null, "slate");
 
       return [management, unallocated];
+    }
+
+    function cleanSheetName(raw) {
+      if (!raw) return null;
+      const cleaned = String(raw)
+        .replace(/\s*\([^)]*\)\s*/g, " ")
+        .replace(/\s*-\s*PC Lead/i, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      return cleaned || null;
+    }
+
+    function sheetPerson(roster, p, raw, defaultTitle) {
+      const name = cleanSheetName(raw);
+      if (!name) return null;
+      let title = defaultTitle;
+      if (/PC Lead/i.test(raw || "")) title = "Partner Care Lead";
+      else if (/\(cnxt\)/i.test(raw || "")) title = `${defaultTitle} (Connext)`;
+      else if (/email\/chat/i.test(raw || "")) title = `${defaultTitle} (Email/Chat)`;
+      else if (/Moder/i.test(raw || "")) title = `${defaultTitle} (Moderator)`;
+      return p(name, title, name.split(/\s+/)[0].toLowerCase());
+    }
+
+    function peopleFrom(roster, p, names, title) {
+      return (names || []).map(n => sheetPerson(roster, p, n, title)).filter(Boolean);
+    }
+
+    function collectPersonNames(teams, into = new Set()) {
+      (teams || []).forEach(t => {
+        if (t.head?.name) into.add(t.head.name.toLowerCase().trim());
+        (t.people || []).forEach(person => {
+          if (person?.name) into.add(person.name.toLowerCase().trim());
+        });
+        collectPersonNames(t.subteams || [], into);
+      });
+      return into;
+    }
+
+    function isNamePlaced(name, placedNames) {
+      if (!name) return false;
+      const n = name.toLowerCase().trim();
+      if (placedNames.has(n)) return true;
+      for (const placed of placedNames) {
+        if (n === placed || n.startsWith(placed + " ") || placed.startsWith(n + " ")) return true;
+        const nParts = n.split(/\s+/);
+        const pParts = placed.split(/\s+/);
+        if (nParts[0] === pParts[0] && nParts[nParts.length - 1] === pParts[pParts.length - 1]) return true;
+      }
+      return false;
+    }
+
+    // Source: POD 2.0 sheet — https://docs.google.com/spreadsheets/d/1kbH6rHjjgjG9mF5NONsRXUdrlah3zFdY1AOOgIYkDTM
+    function buildPodsUnderHayle(roster, p) {
+      const colors = ["orange", "amber", "rose", "pink", "violet", "indigo", "blue", "cyan", "teal", "emerald", "green", "slate"];
+      const podDefs = [
+        {
+          num: 1, lender: "West Cap", leader: "Lauren Moffo", color: colors[0],
+          aes: ["Victoria DeLuce"],
+          cxms: ["Francesca Venezia", "Kenney Jean-Gilles", "Niall Cummins", "Steve Wynne", "Denise Cortez", "Stacy Phillips", "Kristina Wilson", "Jessica Pascale", "Jade Wheel", "Joseph Araque (cnxt)", "Karina Rodriguez"],
+          support: ["Denise Moul - PC Lead", "Sha Payton-Thompson", "Franchezka Tugonon (Moder)", "Ronnie Seroyla (Moder)", "Levie Siega (Moder)", "Elizer Martinez (Moder)", "Jefferson Draper (Moder)", "Rojohn Mobe (Moder)", "Shiela Jaim (Moder)", "Jeniffer Grande (Moder)", "Claudine Encio (Moder)", "Milken Alcover (Moder)", "Marimel Gubalane Fuentes (Moder)", "Darlin Erica Arias Yongco (Moder)"],
+          pq: ["Ma. Lousiah Cadiah Arceo", "Divina Bagayao", "Luisa Fernanda Saavedra Piraneque", "Camilo santos Rodriguez", "Arianne Marie Fontanilla", "Angelica Mae Pascual"],
+        },
+        {
+          num: 2, lender: "Truss", leader: "Aaron Walton", color: colors[1],
+          aes: ["Victoria DeLuce"],
+          cxms: ["Megan Gray", "Kaela Cho", "Laura Molina"],
+          support: ["Joyce Brode", "Emmett Collins"],
+          pq: ["Nelson Francisco", "Juan Sebastian Pedroza", "Catalina Leon"],
+        },
+        {
+          num: 3, lender: "CMG", leader: "Amy DeFruscio", color: colors[2],
+          aes: ["Victoria DeLuce"],
+          cxms: ["Mandy Brandon", "Callie Partain", "Daniel Caminksy"],
+          support: ["Aly Hunt", "Juan Diego Kahez (email/chat)"],
+          pq: ["Francis Angeles", "Mailyn Vanessa Stor"],
+        },
+        {
+          num: 4, lender: "CCM", leader: "Kara Salinas", color: colors[3],
+          aes: ["Seth Cohen"],
+          cxms: ["Briana Stockett", "Alejandra Torres (cnxt)"],
+          support: ["Laura Elasivich", "Shelton Colter", "Zaldie Tulop"],
+          pq: ["Katherine Marabulas", "Charis De Guzman"],
+        },
+        {
+          num: 5, lender: "Nexa", leader: "Tiffany Wirfs", color: colors[4],
+          aes: ["Seth Cohen"],
+          cxms: ["Karen Jones", "Stephany Perez (cnxt)"],
+          support: ["Kate Hutchinson", "Elda Marie Arupo"],
+          pq: ["Jonamie Gumayagay", "Desiree Macutay", "Elizabeth Williams"],
+        },
+        {
+          num: 6, lender: "PL Nest", leader: "Rebecca Slawter", color: colors[5],
+          aes: ["Matt Wildman", "Derek Cioffi", "Jared Gordon", "James Brower", "Alex Aiello", "Nick Chene", "Chase Pfeffer"],
+          cxms: ["Vu Nguyen", "Priscilla Feliciano"],
+          support: ["Isabel Carvajales", "Kendall Sparrow", "Cielo Delabajan", "Christine Aragon (chat/email)"],
+          pq: ["Juan Marticorena", "Ran Tiglao"],
+        },
+        {
+          num: 7, lender: "Broker Core", leader: "Jessica Grayson", color: colors[6],
+          aes: ["Matt Wildman", "Derek Cioffi", "Jared Gordon", "James Brower", "Alex Aiello", "Nick Chene", "Stacie Cappadonna", "Chase Pfeffer", "Victoria Deluce (CMG JVs, CapitalM)"],
+          cxms: ["Heather Atkins", "Mikalyn Robinson", "Luis Miranda (cnxt)", "Brena Heiser", "Heena Patel", "Denise Renteria", "Jake Allen", "Jade Gilbert", "Valerie Medina", "Rachel Reber", "Krystal Collar", "Lissette Fernandez", "Hali Snyder", "Shanae McKenzie", "Shenylee Villavencio (cnxt)"],
+          support: ["Jan Michael Santiago - PC Lead", "Batesh Mahmud", "Jeannie Beier", "Nevaeh Chavez", "AJ Pecson", "Gemivir De Vera (email/chat)", "Marilou Tumambo (email/chat)", "Jastin Tupas (email/chat)", "Angelique Israel (email/chat)", "Angelica Joy Reyes (email/chat)", "Reniel Palaganas (email/chat)", "Jeffrey Canlas (email/chat)", "Vladimir Daanoy (email/chat)", "Ma. Christine Flores (email/chat)", "Gina Mae Tenerife (email/chat)", "Juan Camilo Roa (email/chat)", "Laura Mancipe Robles (email/chat)"],
+          pq: ["Ruth Abiegail Lalic", "Jimmark Avillon", "Lina Fajardo", "Jose Alejandro Castro Acuna", "Daniel Alejandro Lopez Urbina", "Jonathan Enrique Quiroz Jiménez", "Laura Nathaly Mendez Onrisa"],
+        },
+        { num: 8, lender: "Loan Depot", note: "9/3", leader: null, color: colors[7], aes: [], cxms: [], support: [], pq: [], tbd: true },
+        { num: 9, lender: "Plaza", note: "Sept", leader: null, color: colors[8], aes: [], cxms: [], support: [], pq: [], tbd: true },
+        { num: 10, lender: "theLender", note: "Sept", leader: null, color: colors[9], aes: [], cxms: [], support: [], pq: [], tbd: true },
+        { num: 11, lender: "Mutual of Omaha", note: "Sept", leader: null, color: colors[10], aes: [], cxms: [], support: [], pq: [], tbd: true },
+        { num: 12, lender: "OCMBC", note: "TBD", leader: null, color: colors[11], aes: [], cxms: [], support: [], pq: [], tbd: true },
+      ];
+
+      const podTeams = podDefs.map(def => {
+        const label = def.note ? `POD ${def.num} — ${def.lender} (${def.note})` : `POD ${def.num} — ${def.lender}`;
+        const head = def.leader
+          ? p(def.leader, "Pod Leader", def.leader.split(/\s+/)[0].toLowerCase())
+          : makePerson("TBD", "Pod Leader", null, true);
+        const subteams = [];
+        const cxms = peopleFrom(roster, p, def.cxms, "CXM");
+        if (cxms.length) subteams.push(makeTeam("CXMs", null, cxms, [], null, def.color));
+        const support = peopleFrom(roster, p, def.support, "Partner Care");
+        if (support.length) subteams.push(makeTeam("Partner Care", null, support, [], null, def.color));
+        const pq = peopleFrom(roster, p, def.pq, "PQ / Processing");
+        if (pq.length) subteams.push(makeTeam("PQ / Processing", null, pq, [], null, def.color));
+        const aes = peopleFrom(roster, p, def.aes, "Account Executive");
+        return makeTeam(label, head, aes, subteams, null, def.color);
+      });
+
+      return makeTeam("PODs", p("Hayle Kluesner", "PODs Manager", "hayle"), [], podTeams, null, "orange");
     }
 
     const updateTeamR = (list, id, upd) => list.map(t => t.id === id ? { ...t, ...upd } : { ...t, subteams: updateTeamR(t.subteams || [], id, upd) });
