@@ -1,23 +1,16 @@
--- Run once in Supabase → SQL Editor (adjust policies if you add auth later).
+-- DEPRECATED: shared org-chart state no longer uses Supabase.
+-- The app now persists via Vercel Blob through /api/org-chart.
+--
+-- Setup:
+--   1. Vercel Dashboard → Storage → Create Blob store → connect this project
+--   2. Redeploy (BLOB_READ_WRITE_TOKEN is injected automatically)
+--
+-- Until Blob is connected, the app runs in local-only mode (browser localStorage)
+-- and JSON Import/Export still works for manual sharing.
 
-create table if not exists public.org_chart_state (
-  id text primary key default 'default',
-  payload jsonb not null,
-  updated_at timestamptz not null default now()
-);
-
-alter table public.org_chart_state enable row level security;
-
--- Anonymous access scoped to the single shared org row (suitable only for internal/trusted deployments).
-create policy "org_chart_select_default"
-  on public.org_chart_state for select
-  using (id = 'default');
-
-create policy "org_chart_insert_default"
-  on public.org_chart_state for insert
-  with check (id = 'default');
-
-create policy "org_chart_update_default"
-  on public.org_chart_state for update
-  using (id = 'default')
-  with check (id = 'default');
+-- Legacy schema kept for reference only:
+-- create table if not exists public.org_chart_state (
+--   id text primary key default 'default',
+--   payload jsonb not null,
+--   updated_at timestamptz not null default now()
+-- );

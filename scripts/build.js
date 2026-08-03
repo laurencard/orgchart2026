@@ -26,7 +26,6 @@ const html = `<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NFTY — By Aug 1</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div id="root">
@@ -62,8 +61,5 @@ ${code}
 </html>
 `;
 
-const outDir = path.join(root, "public");
-fs.mkdirSync(outDir, { recursive: true });
-fs.writeFileSync(path.join(outDir, "index.html"), html);
 fs.writeFileSync(path.join(root, "index.html"), html);
-console.log("Built public/index.html (" + code.length + " bytes compiled app)");
+console.log("Built index.html (" + code.length + " bytes compiled app)");

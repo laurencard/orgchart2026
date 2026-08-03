@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NFTY — By Aug 1</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div id="root">
@@ -45,16 +44,24 @@ const {
 const STORAGE_KEY = "nfty-org-chart-v2";
 const AUTH_KEY = "nfty-org-auth";
 const SITE_PASSWORD = "NFTYDoorPODs";
-const ORG_CHART_ROW_ID = "aug-2026";
-const SUPABASE_URL = "https://cvhqmbuyfmcizcbuvbqk.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2aHFtYnV5Zm1jaXpjYnV2YnFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0OTk3MzMsImV4cCI6MjA5MzA3NTczM30.KGS3RVgGapOVSWhbGkoYLc0tud8EvsBNlT8OwETMq9o";
-let supabaseClient = null;
-function getSupabase() {
-  if (supabaseClient) return supabaseClient;
-  const mod = typeof window !== "undefined" && window.supabase;
-  if (!mod || typeof mod.createClient !== "function") return null;
-  supabaseClient = mod.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  return supabaseClient;
+const ORG_CHART_API = "/api/org-chart";
+async function fetchCloudState() {
+  const res = await fetch(ORG_CHART_API, {
+    cache: "no-store"
+  });
+  return res;
+}
+async function saveCloudState(payload) {
+  const res = await fetch(ORG_CHART_API, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      payload
+    })
+  });
+  return res;
 }
 const svgProps = (size, className) => ({
   width: size,
@@ -1396,47 +1403,51 @@ function NFTYOrgChart() {
   const [exportMsg, setExportMsg] = useState("");
   const [showOpenRoles, setShowOpenRoles] = useState(true);
   const [saveStatus, setSaveStatus] = useState("saved");
-  const [cloudState, setCloudState] = useState(() => getSupabase() ? "loading" : "off");
+  const [cloudState, setCloudState] = useState("loading");
   const saveTimer = useRef(null);
   useEffect(() => {
-    const sb = getSupabase();
-    if (!sb) {
-      setCloudState("off");
-      return;
-    }
     let cancelled = false;
     (async () => {
-      const {
-        data,
-        error
-      } = await sb.from("org_chart_state").select("payload").eq("id", ORG_CHART_ROW_ID).maybeSingle();
-      if (cancelled) return;
-      if (error) {
+      try {
+        const res = await fetchCloudState();
+        if (cancelled) return;
+        if (res.status === 503) {
+          setTeams(loadSavedData());
+          setCloudState("off");
+          return;
+        }
+        if (res.status === 404) {
+          const local = loadSavedData();
+          setTeams(local);
+          const up = await saveCloudState(local);
+          if (cancelled) return;
+          setCloudState(up.ok ? "ready" : "error");
+          return;
+        }
+        if (!res.ok) {
+          setTeams(loadSavedData());
+          setCloudState("error");
+          return;
+        }
+        const data = await res.json();
+        if (data && data.payload != null) {
+          setTeams(normalizeTeams(data.payload));
+          try {
+            if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, JSON.stringify(data.payload));
+          } catch {}
+          setCloudState("ready");
+          return;
+        }
+        const local = loadSavedData();
+        setTeams(local);
+        const up = await saveCloudState(local);
+        if (cancelled) return;
+        setCloudState(up.ok ? "ready" : "error");
+      } catch {
+        if (cancelled) return;
         setTeams(loadSavedData());
-        setCloudState("error");
-        return;
+        setCloudState("off");
       }
-      if (data && data.payload != null) {
-        setTeams(normalizeTeams(data.payload));
-        try {
-          if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, JSON.stringify(data.payload));
-        } catch {}
-        setCloudState("ready");
-        return;
-      }
-      const local = loadSavedData();
-      setTeams(local);
-      const {
-        error: upErr
-      } = await sb.from("org_chart_state").upsert({
-        id: ORG_CHART_ROW_ID,
-        payload: local,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: "id"
-      });
-      if (cancelled) return;
-      setCloudState(upErr ? "error" : "ready");
     })();
     return () => {
       cancelled = true;
@@ -1454,18 +1465,11 @@ function NFTYOrgChart() {
       } catch {
         setSaveStatus("error");
       }
-      const sb = getSupabase();
-      if (sb && cloudState === "ready") {
-        sb.from("org_chart_state").upsert({
-          id: ORG_CHART_ROW_ID,
-          payload: normalized,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: "id"
-        }).then(({
-          error
-        }) => {
-          if (error) console.warn("Supabase save failed:", error);
+      if (cloudState === "ready") {
+        saveCloudState(normalized).then(res => {
+          if (!res.ok) console.warn("Shared cloud save failed:", res.status);
+        }).catch(err => {
+          console.warn("Shared cloud save failed:", err);
         });
       }
     }, 600);
@@ -1632,8 +1636,11 @@ function NFTYOrgChart() {
     className: "text-xs px-2.5 py-1 rounded-full font-medium bg-slate-100 text-slate-600"
   }, "Cloud\u2026"), cloudState === "ready" && React.createElement("span", {
     className: "text-xs px-2.5 py-1 rounded-full font-medium bg-indigo-100 text-indigo-700"
-  }, "Supabase"), cloudState === "error" && React.createElement("span", {
-    className: "text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-700"
+  }, "Shared"), cloudState === "off" && React.createElement("span", {
+    className: "text-xs px-2.5 py-1 rounded-full font-medium bg-slate-100 text-slate-500"
+  }, "Local only"), cloudState === "error" && React.createElement("span", {
+    className: "text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-700",
+    title: "Shared save is unavailable. Edits still save in this browser."
   }, "Cloud error"), React.createElement("span", {
     className: `text-xs px-2.5 py-1 rounded-full font-medium ${saveStatus === "saved" ? "bg-green-100 text-green-700" : saveStatus === "saving" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"}`
   }, saveStatus === "saved" ? "✓ Saved" : saveStatus === "saving" ? "Saving…" : "⚠ Save failed"), React.createElement("button", {

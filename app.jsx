@@ -3,17 +3,20 @@
     const STORAGE_KEY = "nfty-org-chart-v2";
     const AUTH_KEY = "nfty-org-auth";
     const SITE_PASSWORD = "NFTYDoorPODs";
-    const ORG_CHART_ROW_ID = "aug-2026";
-    const SUPABASE_URL = "https://cvhqmbuyfmcizcbuvbqk.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2aHFtYnV5Zm1jaXpjYnV2YnFrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc0OTk3MzMsImV4cCI6MjA5MzA3NTczM30.KGS3RVgGapOVSWhbGkoYLc0tud8EvsBNlT8OwETMq9o";
+    const ORG_CHART_API = "/api/org-chart";
 
-    let supabaseClient = null;
-    function getSupabase() {
-      if (supabaseClient) return supabaseClient;
-      const mod = typeof window !== "undefined" && window.supabase;
-      if (!mod || typeof mod.createClient !== "function") return null;
-      supabaseClient = mod.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-      return supabaseClient;
+    async function fetchCloudState() {
+      const res = await fetch(ORG_CHART_API, { cache: "no-store" });
+      return res;
+    }
+
+    async function saveCloudState(payload) {
+      const res = await fetch(ORG_CHART_API, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payload }),
+      });
+      return res;
     }
 
     // ── Inline Lucide-style icons (SVG) ──
@@ -633,40 +636,53 @@
       const [exportMsg, setExportMsg] = useState("");
       const [showOpenRoles, setShowOpenRoles] = useState(true);
       const [saveStatus, setSaveStatus] = useState("saved");
-      const [cloudState, setCloudState] = useState(() => (getSupabase() ? "loading" : "off"));
+      const [cloudState, setCloudState] = useState("loading");
       const saveTimer = useRef(null);
 
       useEffect(() => {
-        const sb = getSupabase();
-        if (!sb) {
-          setCloudState("off");
-          return;
-        }
         let cancelled = false;
         (async () => {
-          const { data, error } = await sb.from("org_chart_state").select("payload").eq("id", ORG_CHART_ROW_ID).maybeSingle();
-          if (cancelled) return;
-          if (error) {
+          try {
+            const res = await fetchCloudState();
+            if (cancelled) return;
+            // No Blob store configured → local-only mode (no red error).
+            if (res.status === 503) {
+              setTeams(loadSavedData());
+              setCloudState("off");
+              return;
+            }
+            if (res.status === 404) {
+              const local = loadSavedData();
+              setTeams(local);
+              const up = await saveCloudState(local);
+              if (cancelled) return;
+              setCloudState(up.ok ? "ready" : "error");
+              return;
+            }
+            if (!res.ok) {
+              setTeams(loadSavedData());
+              setCloudState("error");
+              return;
+            }
+            const data = await res.json();
+            if (data && data.payload != null) {
+              setTeams(normalizeTeams(data.payload));
+              try {
+                if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, JSON.stringify(data.payload));
+              } catch { /* ignore */ }
+              setCloudState("ready");
+              return;
+            }
+            const local = loadSavedData();
+            setTeams(local);
+            const up = await saveCloudState(local);
+            if (cancelled) return;
+            setCloudState(up.ok ? "ready" : "error");
+          } catch {
+            if (cancelled) return;
             setTeams(loadSavedData());
-            setCloudState("error");
-            return;
+            setCloudState("off");
           }
-          if (data && data.payload != null) {
-            setTeams(normalizeTeams(data.payload));
-            try {
-              if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, JSON.stringify(data.payload));
-            } catch { /* ignore */ }
-            setCloudState("ready");
-            return;
-          }
-          const local = loadSavedData();
-          setTeams(local);
-          const { error: upErr } = await sb.from("org_chart_state").upsert(
-            { id: ORG_CHART_ROW_ID, payload: local, updated_at: new Date().toISOString() },
-            { onConflict: "id" }
-          );
-          if (cancelled) return;
-          setCloudState(upErr ? "error" : "ready");
         })();
         return () => { cancelled = true; };
       }, []);
@@ -683,16 +699,12 @@
           } catch {
             setSaveStatus("error");
           }
-          const sb = getSupabase();
-          if (sb && cloudState === "ready") {
-            sb.from("org_chart_state")
-              .upsert(
-                { id: ORG_CHART_ROW_ID, payload: normalized, updated_at: new Date().toISOString() },
-                { onConflict: "id" }
-              )
-              .then(({ error }) => {
-                if (error) console.warn("Supabase save failed:", error);
-              });
+          if (cloudState === "ready") {
+            saveCloudState(normalized).then((res) => {
+              if (!res.ok) console.warn("Shared cloud save failed:", res.status);
+            }).catch((err) => {
+              console.warn("Shared cloud save failed:", err);
+            });
           }
         }, 600);
       }, [teams, cloudState]);
@@ -827,8 +839,9 @@
               {search && searchIds.size > 0 && <span className="text-xs text-blue-600 font-medium">{searchIds.size} match{searchIds.size !== 1 ? "es" : ""}</span>}
               <div className="flex items-center gap-2 ml-auto flex-wrap">
                 {cloudState === "loading" && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-slate-100 text-slate-600">Cloud…</span>}
-                {cloudState === "ready" && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-indigo-100 text-indigo-700">Supabase</span>}
-                {cloudState === "error" && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-700">Cloud error</span>}
+                {cloudState === "ready" && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-indigo-100 text-indigo-700">Shared</span>}
+                {cloudState === "off" && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-slate-100 text-slate-500">Local only</span>}
+                {cloudState === "error" && <span className="text-xs px-2.5 py-1 rounded-full font-medium bg-red-100 text-red-700" title="Shared save is unavailable. Edits still save in this browser.">Cloud error</span>}
                 <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${saveStatus === "saved" ? "bg-green-100 text-green-700" : saveStatus === "saving" ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-600"}`}>
                   {saveStatus === "saved" ? "✓ Saved" : saveStatus === "saving" ? "Saving…" : "⚠ Save failed"}
                 </span>
