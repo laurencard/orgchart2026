@@ -41,7 +41,7 @@ const {
   useRef,
   useMemo
 } = React;
-const STORAGE_KEY = "nfty-org-chart-v2";
+const STORAGE_KEY = "nfty-org-chart-v3";
 const AUTH_KEY = "nfty-org-auth";
 const SITE_PASSWORD = "NFTYDoorPODs";
 const ORG_CHART_API = "/api/org-chart";
@@ -676,11 +676,11 @@ function buildLegacyTeams() {
   const markDiv = makeTeam("Mark Schacknies — Co-Founder", makePerson("Mark Schacknies", "Co-Founder"), [], [compliance, salesMarketing]);
   return [markDiv, jonathanDiv];
 }
-const MANAGEMENT_PATTERNS = [/^mark(\s+schacknies)?$/i, /^lee$/i, /^jonathan(\s+spinetto)?$/i, /^leo(\s+loomie)?$/i, /^matt$/i, /^jana(\s+\w+)?$/i, /^christina(\s+\w+)?$/i, /^hayle(\s+kluesner)?$/i, /^shubi(\s+\w+)?$/i, /^nicole(\s+\w+)?$/i, /^obi(\s+\w+)?$/i];
-function isManagementPerson(name) {
+const PLACED_PATTERNS = [/^mark(\s+schacknies)?$/i, /^(leson\s+)?lee$/i, /^jonathan(\s+spinetto)?$/i, /^dom(\s+savino)?$/i, /^matt$/i, /^drew(\s+santorella(-doyle)?)?$/i, /^erica(\s+sands)?$/i, /^shubi(\s+\w+)?$/i, /^nicole(\s+\w+)?$/i, /^obi(\s+\w+)?$/i, /^leo(\s+loomie)?$/i, /^stephanie(\s+bunting)?$/i, /^seth(\s+cohen)?$/i, /^stacie(\s+\w+)?$/i, /^tim(\s+rowe)?$/i, /^linda(\s+christensen)?$/i, /^christina(\s+\w+)?$/i, /^brandi(\s+\w+)?$/i, /^ebony(\s+\w+)?$/i, /^becky(\s+\w+)?$/i, /^ruthie(\s+\w+)?$/i, /^lane(\s+\w+)?$/i, /^ashley(\s+fischer)?$/i, /^hayle(\s+kluesner)?$/i, /^jana(\s+\w+)?$/i, /^isidra(\s+almaraz)?$/i, /^lauren(\s+card)?$/i, /^kara\s+schlitt$/i, /^shanice(\s+robinson(\s+ellis)?)?$/i, /^rylee(\s+crawford)?$/i, /^brie(auna)?(\s+williams)?$/i, /^jared(\s+b\w*)?$/i];
+function isPlacedPerson(name) {
   if (!name || name === "TBD") return false;
   const n = name.trim();
-  return MANAGEMENT_PATTERNS.some(re => re.test(n));
+  return PLACED_PATTERNS.some(re => re.test(n));
 }
 function findInRoster(roster, ...keys) {
   const lowerKeys = keys.map(k => k.toLowerCase());
@@ -689,23 +689,33 @@ function findInRoster(roster, ...keys) {
     return lowerKeys.some(k => n === k || n.startsWith(k + " "));
   }) || null;
 }
-function mgmtPerson(displayName, title, roster) {
-  const found = findInRoster(roster, displayName.split(" ")[0].toLowerCase(), displayName.toLowerCase());
-  return makePerson(displayName, title, found?.workingHours ?? null, false, found?.photoUrl ?? null);
+function fromRoster(roster, displayName, title, ...extraKeys) {
+  const keys = [displayName, displayName.split(" ")[0], ...extraKeys].map(k => k.toLowerCase());
+  const found = findInRoster(roster, ...keys);
+  const isTBD = displayName === "TBD" || /\bTBD\b/i.test(title);
+  return makePerson(found?.name || displayName, title, found?.workingHours ?? null, isTBD, found?.photoUrl ?? null);
 }
 function buildInitialData() {
   const legacy = buildLegacyTeams();
   const roster = flattenPeople(legacy);
-  const leeBranch = makeTeam("Chief of Staff", mgmtPerson("Lee", "Chief of Staff", roster), [], [makeTeam("Sales", mgmtPerson("Leo Loomie", "Sales", roster)), makeTeam("Success", mgmtPerson("Matt", "Success", roster)), makeTeam("Ops", mgmtPerson("Jana", "Ops", roster)), makeTeam("Pods — Christina", mgmtPerson("Christina", "Pods", roster)), makeTeam("Pods — Hayle", mgmtPerson("Hayle Kluesner", "Pods", roster))], null, "blue");
-  const jonathanBranch = makeTeam("COO", mgmtPerson("Jonathan Spinetto", "COO", roster), [], [makeTeam("Platform", mgmtPerson("Shubi", "Platform", roster)), makeTeam("Finance", mgmtPerson("Nicole", "Finance", roster)), makeTeam("Risk", mgmtPerson("Obi", "Risk", roster))], null, "violet");
-  const management = makeTeam("NFTY", mgmtPerson("Mark Schacknies", "CEO", roster), [], [leeBranch, jonathanBranch]);
+  const p = (name, title, ...keys) => fromRoster(roster, name, title, ...keys);
+  const jonathanBranch = makeTeam("COO", p("Jonathan Spinetto", "COO, Co-Founder"), [], [makeTeam("Product", p("Erica Sands", "Head of Product", "erica"), [], [], null, "cyan"), makeTeam("Engineering", p("Shubi", "Head of Engineering"), [], [], null, "indigo"), makeTeam("Finance", p("Nicole", "Head of Finance"), [], [], null, "emerald"), makeTeam("Risk", p("Obi", "Head of Risk"), [], [], null, "rose")], null, "violet");
+  const capitalMarkets = makeTeam("Capital Markets", p("Dom Savino", "EVP, Financial Products", "dom"), [p("Drew Santorella-Doyle", "Capital Markets", "drew", "santorella")], [], null, "amber");
+  const sales = makeTeam("Sales", p("Leo Loomie", "Chief Revenue Officer", "leo"), [p("Stephanie Bunting", "Sales Marketing", "stephanie"), p("Seth Cohen", "Business Development", "seth"), p("Stacie", "Business Development")], [], null, "blue");
+  const salesSuccess = makeTeam("Sales Success", p("Tim Rowe", "SVP, Sales Success", "tim"), [], [], null, "cyan");
+  const clientSuccess = makeTeam("Client Success", p("Linda Christensen", "Client Success", "linda"), [p("Christina", "Client Success"), p("Brandi", "Client Success"), p("Ebony", "Onboarding"), p("Becky", "Onboarding"), p("Ruthie", "Onboarding"), p("Alex", "Client Success Marketing"), p("Lane", "Training & Education"), p("Ashley Fischer", "Training & Education", "ashley")], [], null, "green");
+  const pods = makeTeam("PODs", p("Hayle Kluesner", "PODs Manager", "hayle"), [], [], null, "orange");
+  const opsExcellence = makeTeam("Operational Excellence", p("Jana", "Operational Excellence"), [], [makeTeam("Training", p("Isidra Almaraz", "Training", "isidra"), [], [], null, "teal"), makeTeam("Service Desk", p("Lauren Card", "Service Desk", "lauren"), [], [], null, "slate"), makeTeam("PQ", p("Kara Schlitt", "PQ", "kara schlitt", "kara"), [], [], null, "amber"), makeTeam("DTI", p("Shanice Robinson Ellis", "DTI", "shanice"), [], [], null, "rose"), makeTeam("Title", p("Rylee Crawford", "Title", "rylee"), [], [], null, "violet"), makeTeam("Closing", makePerson("TBD", "Head of Closing", null, true), [], [], null, "pink"), makeTeam("Post Closing", p("Brieauna Williams", "Post Closing", "brieauna", "brie"), [], [], null, "indigo"), makeTeam("Servicing", p("Jared B", "Servicing", "jared"), [], [], null, "emerald")], null, "purple");
+  const leeBranch = makeTeam("Chief of Staff", p("Lee", "Chief of Staff", "leson"), [], [sales, salesSuccess, clientSuccess, pods, opsExcellence], null, "blue");
+  const advisor = makeTeam("Strategic Advisor", p("Matt", "Strategic Advisor to CEO"), [], [], null, "slate");
+  const management = makeTeam("NFTY", p("Mark Schacknies", "CEO, Co-Founder", "mark"), [], [jonathanBranch, leeBranch, capitalMarkets, advisor], null, "blue");
   const seen = new Set();
-  const unallocatedPeople = roster.filter(p => !isManagementPerson(p.name)).filter(p => {
-    const key = p.name.toLowerCase().trim();
+  const unallocatedPeople = roster.filter(person => !isPlacedPerson(person.name)).filter(person => {
+    const key = person.name.toLowerCase().trim();
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
-  }).map(p => makePerson(p.name, p.title || p.role || "", p.workingHours ?? null, p.isTBD, p.photoUrl ?? null));
+  }).map(person => makePerson(person.name, person.title || person.role || "", person.workingHours ?? null, person.isTBD, person.photoUrl ?? null));
   const unallocated = makeTeam("Unallocated", null, unallocatedPeople, [], null, "slate");
   return [management, unallocated];
 }
