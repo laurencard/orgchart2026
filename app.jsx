@@ -270,8 +270,8 @@
       /^jonathan(\s+spinetto)?$/i,
       /^dom(\s+savino)?$/i,
       /^matt$/i,
-      /^drew(\s+\w+)?$/i,
-      /^erica(\s+\w+)?$/i,
+      /^drew(\s+santorella(-doyle)?)?$/i,
+      /^erica(\s+sands)?$/i,
       /^shubi(\s+\w+)?$/i,
       /^nicole(\s+\w+)?$/i,
       /^obi(\s+\w+)?$/i,
@@ -279,7 +279,7 @@
       /^stephanie(\s+bunting)?$/i,
       /^seth(\s+cohen)?$/i,
       /^stacie(\s+\w+)?$/i,
-      /^tim(\s+\w+)?$/i,
+      /^tim(\s+rowe)?$/i,
       /^linda(\s+christensen)?$/i,
       /^christina(\s+\w+)?$/i,
       /^brandi(\s+\w+)?$/i,
@@ -327,7 +327,7 @@
 
       // CEO direct reports
       const jonathanBranch = makeTeam("COO", p("Jonathan Spinetto", "COO, Co-Founder"), [], [
-        makeTeam("Product", p("Erica", "Head of Product"), [], [], null, "cyan"),
+        makeTeam("Product", p("Erica Sands", "Head of Product", "erica"), [], [], null, "cyan"),
         makeTeam("Engineering", p("Shubi", "Head of Engineering"), [], [], null, "indigo"),
         makeTeam("Finance", p("Nicole", "Head of Finance"), [], [], null, "emerald"),
         makeTeam("Risk", p("Obi", "Head of Risk"), [], [], null, "rose"),
@@ -336,7 +336,7 @@
       const capitalMarkets = makeTeam(
         "Capital Markets",
         p("Dom Savino", "EVP, Financial Products", "dom"),
-        [p("Drew", "Capital Markets")],
+        [p("Drew Santorella-Doyle", "Capital Markets", "drew", "santorella")],
         [],
         null,
         "amber"
@@ -355,7 +355,7 @@
         "blue"
       );
 
-      const salesSuccess = makeTeam("Sales Success", p("Tim", "SVP, Sales Success"), [], [], null, "cyan");
+      const salesSuccess = makeTeam("Sales Success", p("Tim Rowe", "SVP, Sales Success", "tim"), [], [], null, "cyan");
 
       const clientSuccess = makeTeam(
         "Client Success",
