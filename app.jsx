@@ -1,6 +1,6 @@
     const { useState, useEffect, useRef, useMemo } = React;
 
-    const STORAGE_KEY = "nfty-org-chart-v5";
+    const STORAGE_KEY = "nfty-org-chart-v6";
     const AUTH_KEY = "nfty-org-auth";
     const SITE_PASSWORD = "NFTYDoorPODs";
     const ORG_CHART_API = "/api/org-chart";
@@ -338,8 +338,9 @@
       const advisor = makeTeam("Strategic Advisor", p("Matt", "Strategic Advisor"), [], [], null, "slate");
 
       const jonathanBranch = makeTeam("COO", p("Jonathan Spinetto", "COO, Co-Founder"), [], [
-        makeTeam("Product", p("Erica Sands", "Head of Product", "erica"), [], [], null, "cyan"),
-        makeTeam("Engineering", p("Shubi", "Head of Engineering"), [], [], null, "indigo"),
+        makeTeam("Engineering", p("Shubi", "Head of Engineering"), [], [
+          makeTeam("Product", p("Erica Sands", "Head of Product", "erica"), [], [], null, "cyan"),
+        ], null, "indigo"),
         makeTeam("Finance", p("Nicole", "Head of Finance"), [], [], null, "emerald"),
         makeTeam("Risk", p("Obi", "Head of Risk"), [], [], null, "rose"),
         capitalMarkets,
