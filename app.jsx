@@ -1,6 +1,6 @@
     const { useState, useEffect, useRef, useMemo } = React;
 
-    const STORAGE_KEY = "nfty-org-chart-v4";
+    const STORAGE_KEY = "nfty-org-chart-v5";
     const AUTH_KEY = "nfty-org-auth";
     const SITE_PASSWORD = "NFTYDoorPODs";
     const ORG_CHART_API = "/api/org-chart";
@@ -382,6 +382,7 @@
       const pods = makeTeam("PODs", p("Hayle Kluesner", "PODs Manager", "hayle"), [], [], null, "orange");
 
       const opsExcellence = makeTeam("Operational Excellence", p("Jana", "Operational Excellence"), [], [
+        pods,
         makeTeam("Training", p("Isidra Almaraz", "Training", "isidra"), [], [], null, "teal"),
         makeTeam("Service Desk", p("Lauren Card", "Service Desk", "lauren"), [], [], null, "slate"),
         makeTeam("PQ", p("Kara Schlitt", "PQ", "kara schlitt", "kara"), [], [], null, "amber"),
@@ -396,7 +397,6 @@
         sales,
         salesSuccess,
         clientSuccess,
-        pods,
         opsExcellence,
       ], null, "blue");
 

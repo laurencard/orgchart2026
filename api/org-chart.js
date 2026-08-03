@@ -1,4 +1,4 @@
-const BLOB_PATH = "org-chart/structure-v4.json";
+const BLOB_PATH = "org-chart/structure-v5.json";
 const BLOB_API = "https://vercel.com/api/blob";
 const API_VERSION = "7";
 
