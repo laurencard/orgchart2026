@@ -1,4 +1,4 @@
-const { put, list } = require("@vercel/blob");
+const { put, get } = require("@vercel/blob");
 
 const BLOB_PATH = "org-chart/aug-2026.json";
 
@@ -29,9 +29,21 @@ async function readBody(req) {
   return raw ? JSON.parse(raw) : null;
 }
 
-async function findBlob() {
-  const { blobs } = await list({ prefix: BLOB_PATH, limit: 10 });
-  return blobs.find((b) => b.pathname === BLOB_PATH) || null;
+async function readStoredPayload() {
+  const result = await get(BLOB_PATH, { access: "private", useCache: false });
+  if (!result || result.statusCode === 404) return null;
+  if (result.statusCode !== 200) {
+    const err = new Error(`blob_get_failed_${result.statusCode}`);
+    err.statusCode = result.statusCode;
+    throw err;
+  }
+  // Prefer stream → text for JSON; fall back to result fields if present.
+  if (result.stream) {
+    const text = await new Response(result.stream).text();
+    return text ? JSON.parse(text) : null;
+  }
+  if (typeof result.body === "string") return JSON.parse(result.body);
+  return null;
 }
 
 module.exports = async function handler(req, res) {
@@ -49,24 +61,18 @@ module.exports = async function handler(req, res) {
     send(res, 503, {
       error: "not_configured",
       message:
-        "Connect a Vercel Blob store to this project (Storage → Blob). Newer stores use BLOB_STORE_ID + VERCEL_OIDC_TOKEN.",
+        "Connect Blob store nfty-org-chart-blob to this Vercel project (Storage → connect for Production + Preview).",
     });
     return;
   }
 
   try {
     if (req.method === "GET") {
-      const blob = await findBlob();
-      if (!blob) {
+      const data = await readStoredPayload();
+      if (!data) {
         send(res, 404, { error: "not_found" });
         return;
       }
-      const upstream = await fetch(blob.url, { cache: "no-store" });
-      if (!upstream.ok) {
-        send(res, 502, { error: "blob_fetch_failed", status: upstream.status });
-        return;
-      }
-      const data = await upstream.json();
       send(res, 200, data);
       return;
     }
@@ -83,7 +89,7 @@ module.exports = async function handler(req, res) {
         updated_at: new Date().toISOString(),
       };
       await put(BLOB_PATH, JSON.stringify(stored), {
-        access: "public",
+        access: "private",
         addRandomSuffix: false,
         allowOverwrite: true,
         contentType: "application/json",
