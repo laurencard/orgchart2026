@@ -9,7 +9,7 @@
   "dependencies": {
     "@babel/core": "^7.25.9",
     "@babel/preset-react": "^7.25.9",
-    "@vercel/blob": "^2.6.1"
+    "cross-spawn": "^7.0.6"
   },
   "devDependencies": {
     "vercel": "^39.0.0"
