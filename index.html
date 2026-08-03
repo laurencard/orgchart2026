@@ -41,7 +41,7 @@ const {
   useRef,
   useMemo
 } = React;
-const STORAGE_KEY = "nfty-org-chart-v3";
+const STORAGE_KEY = "nfty-org-chart-v4";
 const AUTH_KEY = "nfty-org-auth";
 const SITE_PASSWORD = "NFTYDoorPODs";
 const ORG_CHART_API = "/api/org-chart";
@@ -699,16 +699,16 @@ function buildInitialData() {
   const legacy = buildLegacyTeams();
   const roster = flattenPeople(legacy);
   const p = (name, title, ...keys) => fromRoster(roster, name, title, ...keys);
-  const jonathanBranch = makeTeam("COO", p("Jonathan Spinetto", "COO, Co-Founder"), [], [makeTeam("Product", p("Erica Sands", "Head of Product", "erica"), [], [], null, "cyan"), makeTeam("Engineering", p("Shubi", "Head of Engineering"), [], [], null, "indigo"), makeTeam("Finance", p("Nicole", "Head of Finance"), [], [], null, "emerald"), makeTeam("Risk", p("Obi", "Head of Risk"), [], [], null, "rose")], null, "violet");
   const capitalMarkets = makeTeam("Capital Markets", p("Dom Savino", "EVP, Financial Products", "dom"), [p("Drew Santorella-Doyle", "Capital Markets", "drew", "santorella")], [], null, "amber");
+  const advisor = makeTeam("Strategic Advisor", p("Matt", "Strategic Advisor"), [], [], null, "slate");
+  const jonathanBranch = makeTeam("COO", p("Jonathan Spinetto", "COO, Co-Founder"), [], [makeTeam("Product", p("Erica Sands", "Head of Product", "erica"), [], [], null, "cyan"), makeTeam("Engineering", p("Shubi", "Head of Engineering"), [], [], null, "indigo"), makeTeam("Finance", p("Nicole", "Head of Finance"), [], [], null, "emerald"), makeTeam("Risk", p("Obi", "Head of Risk"), [], [], null, "rose"), capitalMarkets, advisor], null, "violet");
   const sales = makeTeam("Sales", p("Leo Loomie", "Chief Revenue Officer", "leo"), [p("Stephanie Bunting", "Sales Marketing", "stephanie"), p("Seth Cohen", "Business Development", "seth"), p("Stacie", "Business Development")], [], null, "blue");
   const salesSuccess = makeTeam("Sales Success", p("Tim Rowe", "SVP, Sales Success", "tim"), [], [], null, "cyan");
   const clientSuccess = makeTeam("Client Success", p("Linda Christensen", "Client Success", "linda"), [p("Christina", "Client Success"), p("Brandi", "Client Success"), p("Ebony", "Onboarding"), p("Becky", "Onboarding"), p("Ruthie", "Onboarding"), p("Alex", "Client Success Marketing"), p("Lane", "Training & Education"), p("Ashley Fischer", "Training & Education", "ashley")], [], null, "green");
   const pods = makeTeam("PODs", p("Hayle Kluesner", "PODs Manager", "hayle"), [], [], null, "orange");
   const opsExcellence = makeTeam("Operational Excellence", p("Jana", "Operational Excellence"), [], [makeTeam("Training", p("Isidra Almaraz", "Training", "isidra"), [], [], null, "teal"), makeTeam("Service Desk", p("Lauren Card", "Service Desk", "lauren"), [], [], null, "slate"), makeTeam("PQ", p("Kara Schlitt", "PQ", "kara schlitt", "kara"), [], [], null, "amber"), makeTeam("DTI", p("Shanice Robinson Ellis", "DTI", "shanice"), [], [], null, "rose"), makeTeam("Title", p("Rylee Crawford", "Title", "rylee"), [], [], null, "violet"), makeTeam("Closing", makePerson("TBD", "Head of Closing", null, true), [], [], null, "pink"), makeTeam("Post Closing", p("Brieauna Williams", "Post Closing", "brieauna", "brie"), [], [], null, "indigo"), makeTeam("Servicing", p("Jared B", "Servicing", "jared"), [], [], null, "emerald")], null, "purple");
   const leeBranch = makeTeam("Chief of Staff", p("Lee", "Chief of Staff", "leson"), [], [sales, salesSuccess, clientSuccess, pods, opsExcellence], null, "blue");
-  const advisor = makeTeam("Strategic Advisor", p("Matt", "Strategic Advisor to CEO"), [], [], null, "slate");
-  const management = makeTeam("NFTY", p("Mark Schacknies", "CEO, Co-Founder", "mark"), [], [jonathanBranch, leeBranch, capitalMarkets, advisor], null, "blue");
+  const management = makeTeam("NFTY", p("Mark Schacknies", "CEO, Co-Founder", "mark"), [], [jonathanBranch, leeBranch], null, "blue");
   const seen = new Set();
   const unallocatedPeople = roster.filter(person => !isPlacedPerson(person.name)).filter(person => {
     const key = person.name.toLowerCase().trim();
