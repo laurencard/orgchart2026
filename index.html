@@ -439,11 +439,12 @@ const TEAM_COLORS = {
 let _id = 1000;
 function loadSavedData() {
   try {
-    if (typeof localStorage === "undefined") return buildInitialData();
+    if (typeof localStorage === "undefined") return ensureUnallocatedFromSlack(buildInitialData());
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? normalizeTeams(JSON.parse(raw)) : buildInitialData();
+    const base = raw ? normalizeTeams(JSON.parse(raw)) : buildInitialData();
+    return ensureUnallocatedFromSlack(base);
   } catch {
-    return buildInitialData();
+    return ensureUnallocatedFromSlack(buildInitialData());
   }
 }
 const uid = () => `id_${_id++}`;
@@ -527,6 +528,816 @@ const makeTeam = (name, head = null, people = [], subteams = [], logo = null, co
   logo,
   color
 });
+
+// Active Slack members not already placed on the org chart (from slack export).
+const SLACK_UNALLOCATED_MEMBERS = [
+  {
+    "name": "Aaron Walton",
+    "email": "aaron.walton@nftydoor.com"
+  },
+  {
+    "name": "Agustín Cabrera",
+    "email": "agustin.cabrera@nftydoor.com"
+  },
+  {
+    "name": "Amber Scotti",
+    "email": "amber.scotti@nftydoor.com"
+  },
+  {
+    "name": "Amy DeFruscio",
+    "email": "amy.defruscio@nftydoor.com"
+  },
+  {
+    "name": "Ana Sofia Ramirez",
+    "email": "Ana.Ramirez@nftydoor.com"
+  },
+  {
+    "name": "Ardy Ocampo",
+    "email": "ardylyn.ocampo@nftydoor.com"
+  },
+  {
+    "name": "Arianne Marie Fontanilla",
+    "email": "arianne.fontanilla@nftydoor.com"
+  },
+  {
+    "name": "Arunima Deb",
+    "email": "arunima.deb@nftydoor.com"
+  },
+  {
+    "name": "Ashay Brahmbhatt",
+    "email": "ashay.brahmbhatt@nftydoor.com"
+  },
+  {
+    "name": "Batesh Mahmud",
+    "email": "batesh.mahmud@nftydoor.com"
+  },
+  {
+    "name": "Brandon DeMello",
+    "email": "brandon.demello@nftydoor.com"
+  },
+  {
+    "name": "Brena Heiser",
+    "email": "brena.heiser@nftydoor.com"
+  },
+  {
+    "name": "Camilo Santos",
+    "email": "camilo.rodriguez@nftydoor.com"
+  },
+  {
+    "name": "Catalina Leon",
+    "email": "Catalina.Caceres@nftydoor.com"
+  },
+  {
+    "name": "Chase Pfeffer",
+    "email": "chase.pfeffer@nftydoor.com"
+  },
+  {
+    "name": "Cherrielyn Bognot",
+    "email": "cherrielyn.Bognot@nftydoor.com"
+  },
+  {
+    "name": "Christine Aragon",
+    "email": "Christine.Aragon@nftydoor.com"
+  },
+  {
+    "name": "Claudine Encio",
+    "email": "claudine.encio@nftydoor.com"
+  },
+  {
+    "name": "Cleidys Herrera",
+    "email": "Cleidys.Herrera@nftydoor.com"
+  },
+  {
+    "name": "Conrado Gunthardt Moia",
+    "email": "conrado.gunthardt@nftydoor.com"
+  },
+  {
+    "name": "Dana Ferrick",
+    "email": "dana.ferrick@nftydoor.com"
+  },
+  {
+    "name": "Dani V",
+    "email": "daniel.villalobos@nftydoor.com"
+  },
+  {
+    "name": "Daniel Caminsky",
+    "email": "daniel.caminsky@nftydoor.com"
+  },
+  {
+    "name": "Daniel Lopez U",
+    "email": "daniel.urbina@nftydoor.com"
+  },
+  {
+    "name": "Dante Kaddarian",
+    "email": "dante.kaddarian@nftydoor.com"
+  },
+  {
+    "name": "Darin Ngau",
+    "email": "darin.ngau@nftydoor.com"
+  },
+  {
+    "name": "Darlin Yongco",
+    "email": "darlin.yongco@nftydoor.com"
+  },
+  {
+    "name": "Denise Cortez",
+    "email": "denise.cortez@nftydoor.com"
+  },
+  {
+    "name": "Denise Moul",
+    "email": "denise.moul@nftydoor.com"
+  },
+  {
+    "name": "Denise Renteria",
+    "email": "denise.renteria@nftydoor.com"
+  },
+  {
+    "name": "Derek Cioffi",
+    "email": "derek.cioffi@nftydoor.com"
+  },
+  {
+    "name": "Divina Bagayao",
+    "email": "consultant-divina@nftydoor.com"
+  },
+  {
+    "name": "Eduardo Maniago",
+    "email": "eduardo.maniago@nftydoor.com"
+  },
+  {
+    "name": "Elda Arupo",
+    "email": "elda.arupo@nftydoor.com"
+  },
+  {
+    "name": "Elizabeth Williams",
+    "email": "elizabeth.williams@nftydoor.com"
+  },
+  {
+    "name": "Elizer Martinez",
+    "email": "elizer.martinez@nftydoor.com"
+  },
+  {
+    "name": "Ellizah Faye Hamlig",
+    "email": "ellizah.hamlig@nftydoor.com"
+  },
+  {
+    "name": "Emanuel Forlin",
+    "email": "emanuel.forlin@nftydoor.com"
+  },
+  {
+    "name": "Emmett Collins",
+    "email": "emmett.collins@nftydoor.com"
+  },
+  {
+    "name": "Erin McMyn",
+    "email": "erin.mcmyn@nftydoor.com"
+  },
+  {
+    "name": "Esteban Caccin",
+    "email": "esteban.caccin@nftydoor.com"
+  },
+  {
+    "name": "Eugenia Damy",
+    "email": "consultant-eugenia@nftydoor.com"
+  },
+  {
+    "name": "Facundo Sartori",
+    "email": "consultant-facundo-sartori@nftydoor.com"
+  },
+  {
+    "name": "Facundo Yoris",
+    "email": "facundo.yoris@nftydoor.com"
+  },
+  {
+    "name": "Francesca Venezia CXM-8-5PM",
+    "email": "francesca.venezia@nftydoor.com"
+  },
+  {
+    "name": "Franchezka Tugonon",
+    "email": "franchezka.tugonon@nftydoor.com"
+  },
+  {
+    "name": "Francis Mercado",
+    "email": "Francis.Mercado@nftydoor.com"
+  },
+  {
+    "name": "Franco Galfré",
+    "email": "galfre.franco@nftydoor.com"
+  },
+  {
+    "name": "Gabriel Abalde",
+    "email": "gabriel.abalde@nftydoor.com"
+  },
+  {
+    "name": "Gabriel Orozco",
+    "email": "gabriel.penate@nftydoor.com"
+  },
+  {
+    "name": "Gavin Zuschlag",
+    "email": "gavin.zuschlag@nftydoor.com"
+  },
+  {
+    "name": "Gimena Escalante",
+    "email": "gimena.escalante@nftydoor.com"
+  },
+  {
+    "name": "Gina Mae Guil Tenerife",
+    "email": "gina.tenerife@nftydoor.com"
+  },
+  {
+    "name": "Gino Luspo",
+    "email": "gino.luspo@nftydoor.com"
+  },
+  {
+    "name": "Giuliano Antonanzas",
+    "email": "giuliano.antonanzas@nftydoor.com"
+  },
+  {
+    "name": "Goutham Baikadi",
+    "email": "goutham.baikadi@nftydoor.com"
+  },
+  {
+    "name": "Hali Snyder 830 AM-530 PM",
+    "email": "hali.snyder@nftydoor.com"
+  },
+  {
+    "name": "Heather Adkins 930 AM - 630 PM",
+    "email": "heather.adkins@nftydoor.com"
+  },
+  {
+    "name": "Heena Patel",
+    "email": "heena.patel@nftydoor.com"
+  },
+  {
+    "name": "Hillary Tastad",
+    "email": "hillary.tastad@nftydoor.com"
+  },
+  {
+    "name": "Jade Gilbert",
+    "email": "jade.gilbert@nftydoor.com"
+  },
+  {
+    "name": "Jade Wheel",
+    "email": "jade.wheel@nftydoor.com"
+  },
+  {
+    "name": "Jake Allen",
+    "email": "jacob.allen@nftydoor.com"
+  },
+  {
+    "name": "James Angelo Ola",
+    "email": "james.ola@nftydoor.com"
+  },
+  {
+    "name": "James Brower",
+    "email": "james.brower@nftydoor.com"
+  },
+  {
+    "name": "Janel Gumba",
+    "email": "janel.gumba@nftydoor.com"
+  },
+  {
+    "name": "Jastin Tupas",
+    "email": "Jastin.Tupas@nftydoor.com"
+  },
+  {
+    "name": "Jayven Calpito",
+    "email": "Jayven.Calpito@nftydoor.com"
+  },
+  {
+    "name": "Jeannie Beier 830AM -5PM",
+    "email": "jeannie.beier@nftydoor.com"
+  },
+  {
+    "name": "Jefferson Draper",
+    "email": "jefferson.draper@nftydoor.com"
+  },
+  {
+    "name": "Jeneveve Menguito",
+    "email": "jeneveve.Menguito@nftydoor.com"
+  },
+  {
+    "name": "Jeniffer grande",
+    "email": "jeniffer.grande@nftydoor.com"
+  },
+  {
+    "name": "Jennus Ibañez",
+    "email": "jennus.ibanez@nftydoor.com"
+  },
+  {
+    "name": "Jessica Pascale",
+    "email": "jessica.pascale@nftydoor.com"
+  },
+  {
+    "name": "Jessica Price",
+    "email": "jessica.price@nftydoor.com"
+  },
+  {
+    "name": "Jessica Wharton",
+    "email": "jessica.wharton@nftydoor.com"
+  },
+  {
+    "name": "Jhoana Ethil Canlas",
+    "email": "jhoana.canlas@nftydoor.com"
+  },
+  {
+    "name": "Joanna Marie Gondale",
+    "email": "joanna.gondale@nftydoor.com"
+  },
+  {
+    "name": "Joaquin Giacusa",
+    "email": "joaquin.giacusa@nftydoor.com"
+  },
+  {
+    "name": "Joel Esidin",
+    "email": "consultant-joel@nftydoor.com"
+  },
+  {
+    "name": "Jonathan Quiroz Thursday",
+    "email": "jonathan.jimenez@nftydoor.com"
+  },
+  {
+    "name": "Jose Castro",
+    "email": "jose.castro@nftydoor.com"
+  },
+  {
+    "name": "Joseph Mendoza",
+    "email": "joseph.mendoza@nftydoor.com"
+  },
+  {
+    "name": "Joyce Ann Morales",
+    "email": "joyce.morales@nftydoor.com"
+  },
+  {
+    "name": "Joyce Brode",
+    "email": "joyce.brode@nftydoor.com"
+  },
+  {
+    "name": "Jozel Tugade",
+    "email": "jozel.tugade@nftydoor.com"
+  },
+  {
+    "name": "Juan Godoy",
+    "email": "Juan.Godoy@nftydoor.com"
+  },
+  {
+    "name": "Juan Kahez",
+    "email": "juan.kahez@nftydoor.com"
+  },
+  {
+    "name": "Juan P. Ramirez",
+    "email": "juan.ramirez@nftydoor.com"
+  },
+  {
+    "name": "Juan Sebastian Pedroza",
+    "email": "juan.pedroza@nftydoor.com"
+  },
+  {
+    "name": "Julia Cheng",
+    "email": "julia.cheng@nftydoor.com"
+  },
+  {
+    "name": "Julian Perez",
+    "email": "julian.perez@nftydoor.com"
+  },
+  {
+    "name": "Julian Quitero Perdomo",
+    "email": "Julian.Perdomo@nftydoor.com"
+  },
+  {
+    "name": "Justo Medina",
+    "email": "justo.medina@nftydoor.com"
+  },
+  {
+    "name": "Kaela Cho",
+    "email": "kaela.cho@nftydoor.com"
+  },
+  {
+    "name": "Kameron Fisher",
+    "email": "kameron.fisher@nftydoor.com"
+  },
+  {
+    "name": "Karen Jones Mon",
+    "email": "karen.jones@nftydoor.com"
+  },
+  {
+    "name": "Karina Rodriguez Mon",
+    "email": "karina.rodriguez@nftydoor.com"
+  },
+  {
+    "name": "Kendall Sparrow",
+    "email": "kendall.sparrow@nftydoor.com"
+  },
+  {
+    "name": "Kenneth Mendoza",
+    "email": "kenneth.mendoza@nftydoor.com"
+  },
+  {
+    "name": "Kenney Jean-Gilles",
+    "email": "kenny.gilles@nftydoor.com"
+  },
+  {
+    "name": "Kevin Cao",
+    "email": "kevin.cao@nftydoor.com"
+  },
+  {
+    "name": "Kim Jach",
+    "email": "kim.jach@nftydoor.com"
+  },
+  {
+    "name": "Kimberly Todd",
+    "email": "kimberly.todd@nftydoor.com"
+  },
+  {
+    "name": "Kimberly Walsh",
+    "email": "kimberly.walsh@nftydoor.com"
+  },
+  {
+    "name": "Konrad Rywelski",
+    "email": "konrad.rywelski@nftydoor.com"
+  },
+  {
+    "name": "Kostiantyn Ustinov",
+    "email": "kostiantyn.ustinov@nftydoor.com"
+  },
+  {
+    "name": "Kristina Wilson",
+    "email": "kristina.wilson@nftydoor.com"
+  },
+  {
+    "name": "Krystal Collar",
+    "email": "krystal.collar@nftydoor.com"
+  },
+  {
+    "name": "Laura Elasivich",
+    "email": "laura.elasivich@nftydoor.com"
+  },
+  {
+    "name": "Laura Mó",
+    "email": "laura.mo@crombie.dev"
+  },
+  {
+    "name": "Laura Molina",
+    "email": "laura.molina@nftydoor.com"
+  },
+  {
+    "name": "Lauren Moffo",
+    "email": "lauren.moffo@nftydoor.com"
+  },
+  {
+    "name": "Leandro Bustos",
+    "email": "leandro.bustos@nftydoor.com"
+  },
+  {
+    "name": "Leilanie Ascaño",
+    "email": "leilanie.ascano@nftydoor.com"
+  },
+  {
+    "name": "Levie Siega",
+    "email": "levie.siega@nftydoor.com"
+  },
+  {
+    "name": "Lissette Fernandez",
+    "email": "lissette.fernandez@nftydoor.com"
+  },
+  {
+    "name": "Lucía Monti",
+    "email": "lucia.monti@nftydoor.com"
+  },
+  {
+    "name": "Luis Ramos",
+    "email": "consultant-luis@nftydoor.com"
+  },
+  {
+    "name": "Luisa Saavedra",
+    "email": "luisa.piraneque@nftydoor.com"
+  },
+  {
+    "name": "Luisina Escobar Gentile",
+    "email": "luisina.escobar@nftydoor.com"
+  },
+  {
+    "name": "Mandy Brandon",
+    "email": "mandy.brandon@nftydoor.com"
+  },
+  {
+    "name": "Marc Ashley Cruzada",
+    "email": "marc.cruzada@nftydoor.com"
+  },
+  {
+    "name": "Marco Salazar",
+    "email": "marco.salazar@nftydoor.com"
+  },
+  {
+    "name": "Marcos Iglesias",
+    "email": "marcos.iglesias@nftydoor.com"
+  },
+  {
+    "name": "Margarita Yance",
+    "email": "margartia.yance@nftydoor.com"
+  },
+  {
+    "name": "Marimel Fuentes",
+    "email": "marimel.fuentes@nftydoor.com"
+  },
+  {
+    "name": "Mark Cameron",
+    "email": "mark.cameron@nftydoor.com"
+  },
+  {
+    "name": "Mark Murfin",
+    "email": "mark.murfin@nftydoor.com"
+  },
+  {
+    "name": "Martín Nicolás Eusebio",
+    "email": "consultant-eusebio@nftydoor.com"
+  },
+  {
+    "name": "Mary Macutay",
+    "email": "mary.macutay@nftydoor.com"
+  },
+  {
+    "name": "Matias Peressutti",
+    "email": "consultant-matias@nftydoor.com"
+  },
+  {
+    "name": "Megan Gray CXM",
+    "email": "megan.gray@nftydoor.com"
+  },
+  {
+    "name": "Melany Kunzi",
+    "email": "consultant-melany@nftydoor.com"
+  },
+  {
+    "name": "Mia Movida",
+    "email": "consultant-mia@nftydoor.com"
+  },
+  {
+    "name": "Miezy Beatrice Aquino",
+    "email": "consultant-miezy@nftydoor.com"
+  },
+  {
+    "name": "Miguel Storani",
+    "email": "miguel.storani@nftydoor.com"
+  },
+  {
+    "name": "Milken Alcover",
+    "email": "milken.alcover@nftydoor.com"
+  },
+  {
+    "name": "Müller Nicolas",
+    "email": "nicolas.muller@nftydoor.com"
+  },
+  {
+    "name": "Nevaeh Chavez",
+    "email": "nevaeh.chavez@nftydoor.com"
+  },
+  {
+    "name": "Niall Cummins",
+    "email": "niall.cummins@nftydoor.com"
+  },
+  {
+    "name": "Nick Chene",
+    "email": "nicholas.chene@nftydoor.com"
+  },
+  {
+    "name": "Nicolas Fridman",
+    "email": "consultant-nicolas-fridman@nftydoor.com"
+  },
+  {
+    "name": "Nicolas Gabrieloni",
+    "email": "nicolas.gabrieloni@nftydoor.com"
+  },
+  {
+    "name": "Niña Marie Galang",
+    "email": "nina.galang@nftydoor.com"
+  },
+  {
+    "name": "Omar Medina",
+    "email": "omar.medina@nftydoor.com"
+  },
+  {
+    "name": "Ornella Grigolato",
+    "email": "ornella.grigolato@nftydoor.com"
+  },
+  {
+    "name": "Pablo Gabriel Ramon Basualdo",
+    "email": "pablogabriel.ramonbasualdo@nftydoor.com"
+  },
+  {
+    "name": "Pablo Vittori",
+    "email": "pablo.vittori@nftydoor.com"
+  },
+  {
+    "name": "Patrick Williams",
+    "email": "patrick.williams@nftydoor.com"
+  },
+  {
+    "name": "Paula Escobar",
+    "email": "maria.escobar@nftydoor.com"
+  },
+  {
+    "name": "Priscilla Feliciano",
+    "email": "priscilla.feliciano@nftydoor.com"
+  },
+  {
+    "name": "Priyanka Naskar",
+    "email": "priyanka.naskar@nftydoor.com"
+  },
+  {
+    "name": "Quino Carlo Miguel",
+    "email": "Quino.Miguel@nftydoor.com"
+  },
+  {
+    "name": "Rachel Reber",
+    "email": "rachel.reber@nftydoor.com"
+  },
+  {
+    "name": "Raquel Consulta",
+    "email": "raquel.consulta@nftydoor.com"
+  },
+  {
+    "name": "Rojohn Mobe",
+    "email": "rojohn.mobe@nftydoor.com"
+  },
+  {
+    "name": "Ron Tiglao",
+    "email": "ron.tiglao@nftydoor.com"
+  },
+  {
+    "name": "Ronnie S. Seroyla",
+    "email": "ronnie.seroyla@nftydoor.com"
+  },
+  {
+    "name": "Roque Glisci",
+    "email": "consultant-roque@nftydoor.com"
+  },
+  {
+    "name": "Ryan Pangilinan",
+    "email": "ryan.pangilinan@nftydoor.com"
+  },
+  {
+    "name": "Sanidhya Wakdikar",
+    "email": "sanidhya.wakdikar@nftydoor.com"
+  },
+  {
+    "name": "Sanjiv Gautam",
+    "email": "sanjiv.gautam@nftydoor.com"
+  },
+  {
+    "name": "Santino Pinnola",
+    "email": "santino.pinnola@nftydoor.com"
+  },
+  {
+    "name": "Sarah Tubos",
+    "email": "sarah.tubos@nftydoor.com"
+  },
+  {
+    "name": "Sha Payton-Thompson",
+    "email": "sha.payton-thompson@nftydoor.com"
+  },
+  {
+    "name": "Shane Morton",
+    "email": "shane.morton@nftydoor.com"
+  },
+  {
+    "name": "Shelton Colter",
+    "email": "shelton.colter@nftydoor.com"
+  },
+  {
+    "name": "Sherley Diaz",
+    "email": "sherley.orjuela@nftydoor.com"
+  },
+  {
+    "name": "Shiela May Jaim",
+    "email": "shiela.jaim@nftydoor.com"
+  },
+  {
+    "name": "Simon",
+    "email": "consultant-simon@nftydoor.com"
+  },
+  {
+    "name": "Stacie Cappadona",
+    "email": "stacie.cappadona@nftydoor.com"
+  },
+  {
+    "name": "Stacy Phillips",
+    "email": "stacy.phillips@nftydoor.com"
+  },
+  {
+    "name": "Steve Wynne",
+    "email": "steven.wynne@nftydoor.com"
+  },
+  {
+    "name": "Sunni Balta",
+    "email": "samantha.balta@nftydoor.com"
+  },
+  {
+    "name": "Surendra Avaduta",
+    "email": "surendra.avaduta@nftydoor.com"
+  },
+  {
+    "name": "Tiffany Wirfs",
+    "email": "tiffany.wirfs@nftydoor.com"
+  },
+  {
+    "name": "Tomás Cravero",
+    "email": "tomas.cravero@nftydoor.com"
+  },
+  {
+    "name": "Trisha Anne Lapuz",
+    "email": "trisha.lapuz@nftydoor.com"
+  },
+  {
+    "name": "Valentin Sigaudo",
+    "email": "valentin.sigaudo@nftydoor.com"
+  },
+  {
+    "name": "Valentina Carrión",
+    "email": "valentina.zamora@nftydoor.com"
+  },
+  {
+    "name": "Valerie Medina",
+    "email": "valerie.medina@nftydoor.com"
+  },
+  {
+    "name": "Van Huynh",
+    "email": "van.huynh@nftydoor.com"
+  },
+  {
+    "name": "Vicki Withrow",
+    "email": "vicki.withrow@nftydoor.com"
+  },
+  {
+    "name": "Victoria DeLuce",
+    "email": "victoria.deluce@nftydoor.com"
+  },
+  {
+    "name": "Vu Nguyen",
+    "email": "vu.nguyen@nftydoor.com"
+  },
+  {
+    "name": "Waldemar Galizzi",
+    "email": "consultant-waldemar@nftydoor.com"
+  }
+];
+
+function normalizePersonKey(name) {
+  return String(name || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function personKeysMatch(a, b) {
+  const na = normalizePersonKey(a);
+  const nb = normalizePersonKey(b);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  if (na.includes(nb) || nb.includes(na)) return true;
+  const ta = na.split(" ").filter(Boolean);
+  const tb = nb.split(" ").filter(Boolean);
+  if (ta.length >= 2 && tb.length >= 2) {
+    if (ta[0] + " " + ta[ta.length - 1] === tb[0] + " " + tb[tb.length - 1]) return true;
+    if (ta[ta.length - 1] === tb[tb.length - 1] && (ta[0].startsWith(tb[0]) || tb[0].startsWith(ta[0]))) return true;
+  }
+  if (ta.length === 1 && tb[0] === ta[0]) return true;
+  if (tb.length === 1 && ta[0] === tb[0]) return true;
+  return false;
+}
+
+function ensureUnallocatedFromSlack(teams) {
+  if (!Array.isArray(teams)) return teams;
+  const clone = (list) => list.map(t => ({ ...t, people: [...(t.people || [])], subteams: clone(t.subteams || []) }));
+  let next = clone(teams);
+  const existing = flattenPeople(next);
+  const names = existing.map(p => p.name);
+  const isKnown = (m) => names.some(n => personKeysMatch(n, m.name));
+  const missing = SLACK_UNALLOCATED_MEMBERS.filter(m => !isKnown(m)).map(m =>
+    makePerson(m.name, "", null, false, null)
+  );
+  const findUnallocated = (list) => {
+    for (const t of list) {
+      if (t.name === "Unallocated") return t;
+      const nested = findUnallocated(t.subteams || []);
+      if (nested) return nested;
+    }
+    return null;
+  };
+  if (!findUnallocated(next)) {
+    next = [...next, makeTeam("Unallocated", null, [], [], null, "slate")];
+  }
+  if (missing.length === 0) return next;
+  const attach = (list) => list.map(t => {
+    if (t.name === "Unallocated") {
+      return { ...t, people: [...(t.people || []), ...missing] };
+    }
+    return { ...t, subteams: attach(t.subteams || []) };
+  });
+  return attach(next);
+}
 function NFTYDoorLogo({
   size = 40
 }) {
@@ -717,6 +1528,14 @@ function buildInitialData() {
     seen.add(key);
     return true;
   }).map(person => makePerson(person.name, person.title || person.role || "", person.workingHours ?? null, person.isTBD, person.photoUrl ?? null));
+  SLACK_UNALLOCATED_MEMBERS.forEach(m => {
+    const key = m.name.toLowerCase().trim();
+    if (seen.has(key)) return;
+    if (isNamePlaced(m.name, placedNames) || isPlacedPerson(m.name)) return;
+    if (unallocatedPeople.some(p => personKeysMatch(p.name, m.name))) return;
+    seen.add(key);
+    unallocatedPeople.push(makePerson(m.name, "", null, false, null));
+  });
   const unallocated = makeTeam("Unallocated", null, unallocatedPeople, [], null, "slate");
   return [management, unallocated];
 }
@@ -1615,9 +2434,10 @@ function NFTYOrgChart() {
         }
         const data = await res.json();
         if (data && data.payload != null) {
-          setTeams(normalizeTeams(data.payload));
+          const merged = ensureUnallocatedFromSlack(normalizeTeams(data.payload));
+          setTeams(merged);
           try {
-            if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, JSON.stringify(data.payload));
+            if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
           } catch {}
           setCloudState("ready");
           return;
