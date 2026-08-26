@@ -1,0 +1,19 @@
+---
+description: Keep the agent in sync with the live shared org chart
+alwaysApply: true
+---
+
+# Live org chart is the source of truth
+
+The deployed site is a **shared team editor**. Anyone with the password can move people; those edits save to Vercel Blob, not to `app.jsx`.
+
+Live → git sync is **not set up yet**. After release, ask the user before assuming `app.jsx` matches the live chart.
+
+## Before changing the org
+
+1. Do **not** bump `STORAGE_KEY` or `BLOB_PATH` unless the user explicitly wants a **re-seed** that wipes live team edits.
+2. Seed code in `buildInitialData()` is only for re-seeds. After the team is editing live, their cloud copy wins until they re-seed.
+
+## Team access
+
+Password is in `SITE_PASSWORD`. Sharing it is how the team gets edit access. Edits are already shared when the header shows **Shared**.

@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "compile": "node scripts/build.js",
+    "sync:live": "node scripts/pull-live-org.js",
     "deploy": "npm run compile && vercel",
     "deploy:prod": "npm run compile && vercel --prod"
   },

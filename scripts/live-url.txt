@@ -1,0 +1,3 @@
+# Production origin for the org chart (no trailing slash).
+# Example: https://your-project.vercel.app
+# GitHub Action uses this, or repo variable ORG_CHART_URL if set.

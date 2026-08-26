@@ -1085,7 +1085,7 @@
             <div className="flex flex-col items-center gap-3">
               <NFTYDoorLogo size={48} />
               <h1 className="text-xl font-bold text-gray-800">NFTY — Aug 26, 2026</h1>
-              <p className="text-sm text-gray-500 text-center">Enter the password to view the organization chart.</p>
+              <p className="text-sm text-gray-500 text-center">Team access — anyone with the password can view and edit. Changes save for everyone.</p>
             </div>
             <div className="relative">
               <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -1325,7 +1325,7 @@
             </div>
             <div className="bg-blue-50 border-t border-blue-100 px-4 py-1.5 flex items-center gap-2 text-xs text-blue-600">
               <Crown size={12} />
-              <span>Drag any person card onto a team's <strong>crown drop zone</strong> to promote them to department head — or onto the team body to move them as a member.</span>
+              <span>Shared team chart — edits save for everyone. Drag a person onto a team's <strong>crown drop zone</strong> to set them as head, or onto the team body to move them as a member.</span>
             </div>
           </div>
 
