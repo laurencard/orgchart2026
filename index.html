@@ -41,7 +41,7 @@ const {
   useRef,
   useMemo
 } = React;
-const STORAGE_KEY = "nfty-org-chart-v9";
+const STORAGE_KEY = "nfty-org-chart-v10";
 const AUTH_KEY = "nfty-org-auth";
 const SITE_PASSWORD = "NFTYDoorPODs";
 const ORG_CHART_API = "/api/org-chart";
@@ -1548,12 +1548,12 @@ function buildInitialData() {
   const serviceDeskPE = makeTeam("Service Desk", null, [mk("Conrado Gunthardt", "Developer — Crombie"), mk("Agustín Cabrera", "Developer — Crombie"), mk("Gimena Escalante", "Developer — Crombie"), mk("Emanuel Forlin", "Developer — Crombie"), mk("Nicolás Fridman", "Developer — Crombie"), mk("Santino Pinnola", "Developer"), mk("Pablo Basualdo Arcati", "Developer")], [], null, "slate");
   const supporting = makeTeam("Supporting Teams", null, [], [functionalAnalysts, programDesign, dataAnalytics, serviceDeskPE], null, "orange");
   const productEng = makeTeam("Product & Engineering", mk("Andrew Shubitowski", "VP Engineering"), [mk("Erica Sands", "VP Product"), mk("Ryan Morrison", "Strategic Initiatives Lead"), mk("Kameron Fisher", "Corporate IT"), mk("David Talbird", "Architecture & Integration"), open("Engineering Manager"), open("Engineering Manager")], [deliverySquads, horizontals, supporting], null, "indigo");
-  const bizDev = makeTeam("Business Development", mk("Leo Loomie", "Head of Business Development"), [mk("Alex Laitamaki"), mk("Jeff Burns"), mk("Matt Wildman"), mk("Seth Cohen"), mk("Stacie Cappadonna")], [], null, "blue");
   const marketing = makeTeam("Marketing", mk("Stephanie Bunting", "Head of Marketing"), [mk("Alexandra Chekouras-Scurti")], [], null, "pink");
-  const cooBranch = makeTeam("COO", mk("Jonathan Spinetto", "COO"), [], [operations, clientSuccess], null, "violet");
+  const bizDev = makeTeam("Business Development", mk("Leo Loomie", "Head of Business Development"), [mk("Alex Laitamaki"), mk("Jeff Burns"), mk("Matt Wildman"), mk("Seth Cohen"), mk("Stacie Cappadonna")], [marketing], null, "blue");
+  const cooBranch = makeTeam("COO", mk("Jonathan Spinetto", "COO"), [], [operations, clientSuccess, productEng, bizDev], null, "violet");
   const chiefOfStaff = makeTeam("Chief of Staff", mk("Leeson Lee", "Chief of Staff"), [], [cx], null, "blue");
   const financialProducts = makeTeam("Financial Products", mk("Dom Savino", "EVP, Financial Products"), [], [], null, "amber");
-  const management = makeTeam("NFTY", mk("Mark Schacknies", "CEO, Co-Founder"), [], [cooBranch, chiefOfStaff, financialProducts, productEng, bizDev, marketing], null, "blue");
+  const management = makeTeam("NFTY", mk("Mark Schacknies", "CEO, Co-Founder"), [], [cooBranch, chiefOfStaff, financialProducts], null, "blue");
   const placedNames = collectPersonNames([management]);
   const seen = new Set();
   const unallocatedPeople = roster.filter(person => !isNamePlaced(person.name, placedNames) && !isPlacedPerson(person.name)).filter(person => {

@@ -1,6 +1,6 @@
     const { useState, useEffect, useRef, useMemo } = React;
 
-    const STORAGE_KEY = "nfty-org-chart-v9";
+    const STORAGE_KEY = "nfty-org-chart-v10";
     const AUTH_KEY = "nfty-org-auth";
     const SITE_PASSWORD = "NFTYDoorPODs";
     const ORG_CHART_API = "/api/org-chart";
@@ -568,21 +568,21 @@
         open("Engineering Manager"), open("Engineering Manager"),
       ], [deliverySquads, horizontals, supporting], null, "indigo");
 
-      // ───────── BUSINESS DEVELOPMENT — Leo Loomie ─────────
-      const bizDev = makeTeam("Business Development", mk("Leo Loomie", "Head of Business Development"), [
-        mk("Alex Laitamaki"), mk("Jeff Burns"), mk("Matt Wildman"), mk("Seth Cohen"), mk("Stacie Cappadonna"),
-      ], [], null, "blue");
-
-      // ───────── MARKETING — Stephanie Bunting ─────────
+      // ───────── MARKETING — Stephanie Bunting (reports to Leo) ─────────
       const marketing = makeTeam("Marketing", mk("Stephanie Bunting", "Head of Marketing"), [
         mk("Alexandra Chekouras-Scurti"),
       ], [], null, "pink");
 
+      // ───────── BUSINESS DEVELOPMENT — Leo Loomie ─────────
+      const bizDev = makeTeam("Business Development", mk("Leo Loomie", "Head of Business Development"), [
+        mk("Alex Laitamaki"), mk("Jeff Burns"), mk("Matt Wildman"), mk("Seth Cohen"), mk("Stacie Cappadonna"),
+      ], [marketing], null, "blue");
+
       // ───────── ROLL-UP: Dom, Jonathan, and Lee report to Mark; Hayle reports to Lee ─────────
-      const cooBranch = makeTeam("COO", mk("Jonathan Spinetto", "COO"), [], [operations, clientSuccess], null, "violet");
+      const cooBranch = makeTeam("COO", mk("Jonathan Spinetto", "COO"), [], [operations, clientSuccess, productEng, bizDev], null, "violet");
       const chiefOfStaff = makeTeam("Chief of Staff", mk("Leeson Lee", "Chief of Staff"), [], [cx], null, "blue");
       const financialProducts = makeTeam("Financial Products", mk("Dom Savino", "EVP, Financial Products"), [], [], null, "amber");
-      const management = makeTeam("NFTY", mk("Mark Schacknies", "CEO, Co-Founder"), [], [cooBranch, chiefOfStaff, financialProducts, productEng, bizDev, marketing], null, "blue");
+      const management = makeTeam("NFTY", mk("Mark Schacknies", "CEO, Co-Founder"), [], [cooBranch, chiefOfStaff, financialProducts], null, "blue");
 
       const placedNames = collectPersonNames([management]);
       const seen = new Set();
