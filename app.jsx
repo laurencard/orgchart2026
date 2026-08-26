@@ -1,6 +1,6 @@
     const { useState, useEffect, useRef, useMemo } = React;
 
-    const STORAGE_KEY = "nfty-org-chart-v8";
+    const STORAGE_KEY = "nfty-org-chart-v9";
     const AUTH_KEY = "nfty-org-auth";
     const SITE_PASSWORD = "NFTYDoorPODs";
     const ORG_CHART_API = "/api/org-chart";
@@ -578,10 +578,11 @@
         mk("Alexandra Chekouras-Scurti"),
       ], [], null, "pink");
 
-      // ───────── ROLL-UP: everyone reports into Mark (CEO) or Jonathan (COO) ─────────
-      const cooBranch = makeTeam("COO", mk("Jonathan Spinetto", "COO"), [], [operations, cx, clientSuccess], null, "violet");
-      const ceoBranch = makeTeam("Office of the CEO", null, [], [productEng, bizDev, marketing], null, "blue");
-      const management = makeTeam("NFTY", mk("Mark Schacknies", "CEO, Co-Founder"), [], [cooBranch, ceoBranch], null, "blue");
+      // ───────── ROLL-UP: Dom, Jonathan, and Lee report to Mark; Hayle reports to Lee ─────────
+      const cooBranch = makeTeam("COO", mk("Jonathan Spinetto", "COO"), [], [operations, clientSuccess], null, "violet");
+      const chiefOfStaff = makeTeam("Chief of Staff", mk("Leeson Lee", "Chief of Staff"), [], [cx], null, "blue");
+      const financialProducts = makeTeam("Financial Products", mk("Dom Savino", "EVP, Financial Products"), [], [], null, "amber");
+      const management = makeTeam("NFTY", mk("Mark Schacknies", "CEO, Co-Founder"), [], [cooBranch, chiefOfStaff, financialProducts, productEng, bizDev, marketing], null, "blue");
 
       const placedNames = collectPersonNames([management]);
       const seen = new Set();
@@ -1281,7 +1282,7 @@
             <div className="flex justify-center"><div className="w-px h-6 bg-gray-300" /></div>
             <div className="flex justify-center"><div className="h-px bg-gray-300 w-2/3 max-w-4xl" /></div>
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mt-0 w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-0 w-full">
               {mgmtBranches.map((branch, i) => {
                 const grad = i === 0 ? "from-blue-600 to-blue-700" : "from-violet-600 to-violet-700";
                 const border = i === 0 ? "border-blue-200" : "border-violet-200";

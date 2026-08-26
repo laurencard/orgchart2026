@@ -41,7 +41,7 @@ const {
   useRef,
   useMemo
 } = React;
-const STORAGE_KEY = "nfty-org-chart-v8";
+const STORAGE_KEY = "nfty-org-chart-v9";
 const AUTH_KEY = "nfty-org-auth";
 const SITE_PASSWORD = "NFTYDoorPODs";
 const ORG_CHART_API = "/api/org-chart";
@@ -1550,9 +1550,10 @@ function buildInitialData() {
   const productEng = makeTeam("Product & Engineering", mk("Andrew Shubitowski", "VP Engineering"), [mk("Erica Sands", "VP Product"), mk("Ryan Morrison", "Strategic Initiatives Lead"), mk("Kameron Fisher", "Corporate IT"), mk("David Talbird", "Architecture & Integration"), open("Engineering Manager"), open("Engineering Manager")], [deliverySquads, horizontals, supporting], null, "indigo");
   const bizDev = makeTeam("Business Development", mk("Leo Loomie", "Head of Business Development"), [mk("Alex Laitamaki"), mk("Jeff Burns"), mk("Matt Wildman"), mk("Seth Cohen"), mk("Stacie Cappadonna")], [], null, "blue");
   const marketing = makeTeam("Marketing", mk("Stephanie Bunting", "Head of Marketing"), [mk("Alexandra Chekouras-Scurti")], [], null, "pink");
-  const cooBranch = makeTeam("COO", mk("Jonathan Spinetto", "COO"), [], [operations, cx, clientSuccess], null, "violet");
-  const ceoBranch = makeTeam("Office of the CEO", null, [], [productEng, bizDev, marketing], null, "blue");
-  const management = makeTeam("NFTY", mk("Mark Schacknies", "CEO, Co-Founder"), [], [cooBranch, ceoBranch], null, "blue");
+  const cooBranch = makeTeam("COO", mk("Jonathan Spinetto", "COO"), [], [operations, clientSuccess], null, "violet");
+  const chiefOfStaff = makeTeam("Chief of Staff", mk("Leeson Lee", "Chief of Staff"), [], [cx], null, "blue");
+  const financialProducts = makeTeam("Financial Products", mk("Dom Savino", "EVP, Financial Products"), [], [], null, "amber");
+  const management = makeTeam("NFTY", mk("Mark Schacknies", "CEO, Co-Founder"), [], [cooBranch, chiefOfStaff, financialProducts, productEng, bizDev, marketing], null, "blue");
   const placedNames = collectPersonNames([management]);
   const seen = new Set();
   const unallocatedPeople = roster.filter(person => !isNamePlaced(person.name, placedNames) && !isPlacedPerson(person.name)).filter(person => {
@@ -2755,7 +2756,7 @@ function NFTYOrgChart() {
   }, React.createElement("div", {
     className: "h-px bg-gray-300 w-2/3 max-w-4xl"
   })), React.createElement("div", {
-    className: "grid grid-cols-1 xl:grid-cols-2 gap-6 mt-0 w-full"
+    className: "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mt-0 w-full"
   }, mgmtBranches.map((branch, i) => {
     const grad = i === 0 ? "from-blue-600 to-blue-700" : "from-violet-600 to-violet-700";
     const border = i === 0 ? "border-blue-200" : "border-violet-200";
