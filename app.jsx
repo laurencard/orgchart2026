@@ -1,6 +1,6 @@
     const { useState, useEffect, useRef, useMemo } = React;
 
-    const STORAGE_KEY = "nfty-org-chart-v11";
+    const STORAGE_KEY = "nfty-org-chart-v14";
     const AUTH_KEY = "nfty-org-auth";
     const SITE_PASSWORD = "NFTYDoorPODs";
     const ORG_CHART_API = "/api/org-chart";
@@ -417,8 +417,7 @@
         mk("Mindy Gambrell", "DTI Analyst — NFTY"),
       ], [], null, "rose");
 
-      const title = makeTeam("Title", mk("Rylee Crawford", "Co-Head — NFTY"), [
-        mk("Gena Giron-Pace", "Co-Head — NFTY"),
+      const titleAnalysts = [
         mk("Josh Singian", "Sr. Title Analyst / Team Lead — Connext"),
         mk("Mandy Hernandez", "Sr. Title Analyst / Team Lead — NFTY"),
         mk("Kazelyn De Jesus", "Sr. Team Member — Connext"),
@@ -445,7 +444,12 @@
         mk("Van Huynh", "Sr. Analyst — NFTY"),
         mk("Brandon Ybarra", "Sr. Analyst — NFTY"),
         mk("Erin Haggerty", "Sr. Analyst — NFTY"),
-      ], [], null, "violet");
+      ];
+      const title = makeTeam("Title", null, [], [
+        makeTeam("Co-Head", mk("Rylee Crawford", "Co-Head — NFTY"), [], [], null, "violet"),
+        makeTeam("Co-Head", mk("Gena Giron-Pace", "Co-Head — NFTY"), [], [], null, "violet"),
+        makeTeam("Analysts", null, titleAnalysts, [], null, "violet"),
+      ], null, "violet");
 
       const closing = makeTeam("Closing", null, [
         mk("Sharymynne Frilles", "Closing Analyst — Connext"),
@@ -574,17 +578,17 @@
         mk("Tomás Cravero", "SWE"), mk("Leandro Bustos", "SWE — Crombie"), mk("Giuliano", "SWE — Crombie"), open("SWE"),
       ], [], null, "blue");
       const squadB = makeTeam("Squad B — LO & Partner", mk("Mark Murfin", "Squad Lead"), [
-        mk("Erica Sands", "PM (Interim)"), mk("Shane Morton", "SWE"), mk("Justo Medina", "SWE"),
+        mk("Shane Morton", "SWE"), mk("Justo Medina", "SWE"),
         mk("Nicolás Gabrieloni", "SWE"), mk("Gabriel Abalde", "SWE"), mk("Simon Schroeder", "SWE"),
         mk("Esteban Caccin", "SWE"), mk("Valentín Sigaudo", "SWE — Crombie"), mk("Marcos Iglesias", "SWE — Crombie"), open("SWE"),
       ], [], null, "cyan");
       const squadC = makeTeam("Squad C — Money Movement", mk("Andrew Shubitowski", "Squad Lead (Interim)"), [
-        mk("Erica Sands", "PM (Interim)"), mk("Julia Cheng", "SWE"), mk("Francisco Cajal", "SWE"),
+        mk("Julia Cheng", "SWE"), mk("Francisco Cajal", "SWE"),
         mk("Joaquín Giacusa", "SWE"), mk("Leonardo Gilli", "SWE"), mk("Dante Kaddarian", "SWE"),
         mk("Mark Cameron", "SWE"), open("SWE"),
       ], [], null, "teal");
       const squadD = makeTeam("Squad D — Underwriting, CX & Internal Ops", mk("Andrew Shubitowski", "Squad Lead (Interim)"), [
-        mk("Erica Sands", "PM (Interim)"), mk("Konrad Rywelski", "SWE"), mk("Kostiantyn Ustinov", "SWE"),
+        mk("Konrad Rywelski", "SWE"), mk("Kostiantyn Ustinov", "SWE"),
         mk("Nicolás Muller", "SWE"), mk("Daniel Villalobos", "SWE"), mk("Ornella Grigolato", "SWE"),
         mk("Luisina Escobar", "SWE"), mk("Julián Pérez", "SWE"), mk("Matías Peressutti", "SWE — Crombie"),
         mk("Patrick Williams", "SWE (starts 8/17)"), open("SWE"),
@@ -622,13 +626,13 @@
       ], [], null, "slate");
       const supporting = makeTeam("Supporting Teams", null, [], [functionalAnalysts, programDesign, dataAnalytics, serviceDeskPE], null, "orange");
 
-      const productEng = makeTeam("Product & Engineering", mk("Andrew Shubitowski", "VP Engineering"), [
-        mk("Erica Sands", "VP Product"),
+      const product = makeTeam("Product", mk("Erica Sands", "VP Product"), [], [deliverySquads], null, "cyan");
+      const engineering = makeTeam("Engineering", mk("Andrew Shubitowski", "VP Engineering"), [
         mk("Ryan Morrison", "Strategic Initiatives Lead"),
         mk("Kameron Fisher", "Corporate IT"),
         mk("David Talbird", "Architecture & Integration"),
         open("Engineering Manager"), open("Engineering Manager"),
-      ], [deliverySquads, horizontals, supporting], null, "indigo");
+      ], [horizontals, supporting], null, "indigo");
 
       // ───────── MARKETING — Stephanie Bunting (reports to Leo) ─────────
       const marketing = makeTeam("Marketing", mk("Stephanie Bunting", "Head of Marketing"), [
@@ -641,9 +645,11 @@
       ], [marketing], null, "blue");
 
       // ───────── ROLL-UP: Dom, Jonathan, and Lee report to Mark; Hayle reports to Lee ─────────
-      const cooBranch = makeTeam("COO", mk("Jonathan Spinetto", "COO"), [], [operations, clientSuccess, productEng, bizDev], null, "violet");
+      const cooBranch = makeTeam("COO", mk("Jonathan Spinetto", "COO"), [], [operations, clientSuccess, product, engineering, bizDev], null, "violet");
       const chiefOfStaff = makeTeam("Chief of Staff", mk("Leeson Lee", "Chief of Staff"), [], [cx], null, "blue");
-      const financialProducts = makeTeam("Financial Products", mk("Dom Savino", "EVP, Financial Products"), [], [], null, "amber");
+      const financialProducts = makeTeam("Financial Products", mk("Dom Savino", "EVP, Financial Products"), [
+        mk("Drew Santorella-Doyle", "Capital Markets"),
+      ], [], null, "amber");
       const management = makeTeam("NFTY", mk("Mark Schacknies", "CEO, Co-Founder"), [], [cooBranch, chiefOfStaff, financialProducts], null, "blue");
 
       const placedNames = collectPersonNames([management]);
