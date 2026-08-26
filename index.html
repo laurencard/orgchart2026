@@ -41,7 +41,7 @@ const {
   useRef,
   useMemo
 } = React;
-const STORAGE_KEY = "nfty-org-chart-v10";
+const STORAGE_KEY = "nfty-org-chart-v11";
 const AUTH_KEY = "nfty-org-auth";
 const SITE_PASSWORD = "NFTYDoorPODs";
 const ORG_CHART_API = "/api/org-chart";
@@ -1297,8 +1297,9 @@ function personKeysMatch(a, b) {
   if (!na || !nb) return false;
   if (na === nb) return true;
   if (na.includes(nb) || nb.includes(na)) return true;
-  const ta = na.split(" ").filter(Boolean);
-  const tb = nb.split(" ").filter(Boolean);
+  const stop = new Set(["jr", "sr", "ii", "iii", "iv"]);
+  const ta = na.split(" ").filter(t => t.length > 1 && !stop.has(t));
+  const tb = nb.split(" ").filter(t => t.length > 1 && !stop.has(t));
   if (ta.length >= 2 && tb.length >= 2) {
     if (ta[0] + " " + ta[ta.length - 1] === tb[0] + " " + tb[tb.length - 1]) return true;
     if (ta[ta.length - 1] === tb[tb.length - 1] && (ta[0].startsWith(tb[0]) || tb[0].startsWith(ta[0]))) return true;
@@ -1308,13 +1309,29 @@ function personKeysMatch(a, b) {
   return false;
 }
 
+const NAME_ALIASES = [["frank angeles", "francis angeles"], ["duvan villarreal", "duvan chalar"], ["vladimir daanoy", "vladmir daanoy"], ["stacie cappadona", "stacie cappadonna"], ["heather adkins", "heather atkins"], ["jeneveve menguito", "jenevieve menguito"], ["jose castro", "jose castor acuna"], ["luisa saavedra", "luisa prianeque"], ["sherley diaz", "sherley orjuela"], ["gean carlo piza", "gean calderon"], ["sanidhya wakdikar", "andy wakdikar"], ["muller nicolas", "nicolas muller"]];
+function namesAreSamePerson(a, b) {
+  if (personKeysMatch(a, b)) return true;
+  const na = normalizePersonKey(a);
+  const nb = normalizePersonKey(b);
+  return NAME_ALIASES.some(([x, y]) => na === x && (nb === y || personKeysMatch(nb, y)) || nb === x && (na === y || personKeysMatch(na, y)) || na === y && (nb === x || personKeysMatch(nb, x)) || nb === y && (na === x || personKeysMatch(na, x)));
+}
+function isRemovedPerson(name) {
+  const n = normalizePersonKey(name);
+  if (!n) return false;
+  if (n === "michele" || n.startsWith("michele farina")) return true;
+  if (n === "princess" || n.startsWith("princess lagman")) return true;
+  if (n === "shanae" || n.startsWith("shanae mckenzie") || n.startsWith("shanae mackenzie")) return true;
+  return false;
+}
+
 function ensureUnallocatedFromSlack(teams) {
   if (!Array.isArray(teams)) return teams;
   const clone = (list) => list.map(t => ({ ...t, people: [...(t.people || [])], subteams: clone(t.subteams || []) }));
   let next = clone(teams);
   const existing = flattenPeople(next);
   const names = existing.map(p => p.name);
-  const isKnown = (m) => names.some(n => personKeysMatch(n, m.name));
+  const isKnown = (m) => isRemovedPerson(m.name) || names.some(n => namesAreSamePerson(n, m.name));
   const missing = SLACK_UNALLOCATED_MEMBERS.filter(m => !isKnown(m)).map(m =>
     makePerson(m.name, "", null, false, null)
   );
@@ -1459,16 +1476,15 @@ function buildLegacyTeams() {
   const micheleJessica = makeTeam("Jessica Grayson", makePerson("Jessica Grayson", "CXM"), [makePerson("Lina Fajardo", "CXA")]);
   const micheleRebecca = makeTeam("Rebecca Slawter", makePerson("Rebecca Slawter", "CXM"), [makePerson("Isabella Yidi", "CXA")]);
   const micheleAly = makeTeam("Aly", makePerson("Aly", "CXM"), [makePerson("Shen Villavicencio", "CXA")]);
-  const cxMicheleTeam = makeTeam("CXM Team — Michele Farina", makePerson("Michele Farina", "CXM Team Lead"), [makePerson("Joferson Salo", "CX Assistant")], [micheleDaniel, micheleCallie, micheleJessica, micheleRebecca, micheleAly]);
+  const cxMicheleTeam = makeTeam("CXM Team", null, [makePerson("Joferson Salo", "CX Assistant")], [micheleDaniel, micheleCallie, micheleJessica, micheleRebecca, micheleAly]);
   const isidraLuis = makeTeam("Luis Miranda", makePerson("Luis Miranda", "CXM"), [makePerson("Joseph Araque", "CXA")]);
-  const isidraShanae = makeTeam("Shanae Mckenzie", makePerson("Shanae Mckenzie", "CXM"), [makePerson("Laura Mancipe Robles", "CXA")]);
   const isidraBriana = makeTeam("Briana Stockett", makePerson("Briana Stockett", "CXM"), [makePerson("Alejandra Garcia", "CXA")]);
   const isidraTami = makeTeam("Tami Matthews", makePerson("Tami Matthews", "CXM"), [makePerson("Isabel Carvajales", "CXA")]);
   const isidraKara = makeTeam("Kara", makePerson("Kara", "CXM"), [makePerson("Sheena Ello", "CXA")]);
-  const cxIsidraTeam = makeTeam("CXM Team — Isidra Almaraz", makePerson("Isidra Almaraz", "CXM Team Lead"), [makePerson("Stephany Perez", "CX Assistant")], [isidraLuis, isidraShanae, isidraBriana, isidraTami, isidraKara]);
+  const cxIsidraTeam = makeTeam("CXM Team — Isidra Almaraz", makePerson("Isidra Almaraz", "CXM Team Lead"), [makePerson("Stephany Perez", "CX Assistant")], [isidraLuis, isidraBriana, isidraTami, isidraKara]);
   const cxTBDTeam = makeTeam("TBD — New CXM", makePerson("TBD", "CXM", null, true), [makePerson("Mailyn Stor", "CXA")]);
   const cx = makeTeam("CX", makePerson("Hayle Kluesner", "CX Dept Head"), [makePerson("Sharymynne Frilles", "CX - Closing Specialist")], [cxMicheleTeam, cxIsidraTeam, cxTBDTeam]);
-  const concierge = makeTeam("Concierge", makePerson("Kate Hutchinson", "Head of Concierge"), [makePerson("Ashley Fischer", "Product Trainer"), makePerson("Princess Lagman", "HD TL"), makePerson("Kim Angeli Cristobal", "STM"), makePerson("AJ Pecson", "Concierge"), makePerson("Jude Maureen Dowa", "Concierge"), makePerson("Jeffrey Fernandez Canlas", "Concierge"), makePerson("Vladimir Daanoy", "Concierge"), makePerson("Jan Santiago", "Concierge"), makePerson("Marilou Tumambo", "Concierge"), makePerson("Reniel Palaganas", "Concierge"), makePerson("Gemivir De Vera", "Concierge"), makePerson("Angelique Israel", "Concierge")]);
+  const concierge = makeTeam("Concierge", makePerson("Kate Hutchinson", "Head of Concierge"), [makePerson("Ashley Fischer", "Product Trainer"), makePerson("Kim Angeli Cristobal", "STM"), makePerson("AJ Pecson", "Concierge"), makePerson("Jude Maureen Dowa", "Concierge"), makePerson("Jeffrey Fernandez Canlas", "Concierge"), makePerson("Vladimir Daanoy", "Concierge"), makePerson("Jan Santiago", "Concierge"), makePerson("Marilou Tumambo", "Concierge"), makePerson("Reniel Palaganas", "Concierge"), makePerson("Gemivir De Vera", "Concierge"), makePerson("Angelique Israel", "Concierge")]);
   const pq = makeTeam("PQ", makePerson("Kara Schlitt", "PQ Team Lead"), [makePerson("Cadiah Arceo", "PQ Analyst"), makePerson("Jimmark Avillon", "PQ Analyst"), makePerson("Henry Del Rosario", "PQ Analyst"), makePerson("Julieta Navarro", "PQ Analyst"), makePerson("Leonelyn Valentin", "PQ Analyst"), makePerson("Juan Francisco Marticorena", "PQ Analyst"), makePerson("Sol Alderete", "PQ Analyst"), makePerson("Frank Angeles", "PQ Analyst"), makePerson("Katherine Marabulas", "PQ Analyst"), makePerson("Jonamie Gumayagay", "PQ Analyst"), makePerson("Nelson Francisco", "PQ Analyst")], [], null, "green");
   const dtiTeamA = makeTeam("Team A", null, [makePerson("Vijay Shanbhag", "DTI Analyst"), makePerson("Rodee Cabalida", "DTI Analyst"), makePerson("Enrique Ramirez", "DTI Analyst")]);
   const dtiTeamB = makeTeam("Team B", null, [makePerson("Quinne Baxal", "DTI Analyst"), makePerson("Patima Pina Dungo", "DTI Analyst"), makePerson("Gean Carlo Piza", "DTI Analyst")]);
@@ -1555,8 +1571,9 @@ function buildInitialData() {
   const financialProducts = makeTeam("Financial Products", mk("Dom Savino", "EVP, Financial Products"), [], [], null, "amber");
   const management = makeTeam("NFTY", mk("Mark Schacknies", "CEO, Co-Founder"), [], [cooBranch, chiefOfStaff, financialProducts], null, "blue");
   const placedNames = collectPersonNames([management]);
+  const placedList = [...placedNames];
   const seen = new Set();
-  const unallocatedPeople = roster.filter(person => !isNamePlaced(person.name, placedNames) && !isPlacedPerson(person.name)).filter(person => {
+  const unallocatedPeople = roster.filter(person => !isRemovedPerson(person.name)).filter(person => !isNamePlaced(person.name, placedNames) && !isPlacedPerson(person.name)).filter(person => !placedList.some(placed => namesAreSamePerson(person.name, placed))).filter(person => {
     const key = person.name.toLowerCase().trim();
     if (seen.has(key)) return false;
     seen.add(key);
@@ -1565,8 +1582,10 @@ function buildInitialData() {
   SLACK_UNALLOCATED_MEMBERS.forEach(m => {
     const key = m.name.toLowerCase().trim();
     if (seen.has(key)) return;
+    if (isRemovedPerson(m.name)) return;
     if (isNamePlaced(m.name, placedNames) || isPlacedPerson(m.name)) return;
-    if (unallocatedPeople.some(p => personKeysMatch(p.name, m.name))) return;
+    if (placedList.some(placed => namesAreSamePerson(m.name, placed))) return;
+    if (unallocatedPeople.some(p => namesAreSamePerson(p.name, m.name))) return;
     seen.add(key);
     unallocatedPeople.push(makePerson(m.name, "", null, false, null));
   });
@@ -1672,7 +1691,7 @@ function buildPodsUnderHayle(roster, p) {
     leader: "Jessica Grayson",
     color: colors[6],
     aes: ["Matt Wildman", "Derek Cioffi", "Jared Gordon", "James Brower", "Alex Aiello", "Nick Chene", "Stacie Cappadonna", "Chase Pfeffer", "Victoria Deluce (CMG JVs, CapitalM)"],
-    cxms: ["Heather Atkins", "Mikalyn Robinson", "Luis Miranda (cnxt)", "Brena Heiser", "Heena Patel", "Denise Renteria", "Jake Allen", "Jade Gilbert", "Valerie Medina", "Rachel Reber", "Krystal Collar", "Lissette Fernandez", "Hali Snyder", "Shanae McKenzie", "Shenylee Villavencio (cnxt)"],
+    cxms: ["Heather Atkins", "Mikalyn Robinson", "Luis Miranda (cnxt)", "Brena Heiser", "Heena Patel", "Denise Renteria", "Jake Allen", "Jade Gilbert", "Valerie Medina", "Rachel Reber", "Krystal Collar", "Lissette Fernandez", "Hali Snyder", "Shenylee Villavencio (cnxt)"],
     support: ["Jan Michael Santiago - PC Lead", "Batesh Mahmud", "Jeannie Beier", "Nevaeh Chavez", "AJ Pecson", "Gemivir De Vera (email/chat)", "Marilou Tumambo (email/chat)", "Jastin Tupas (email/chat)", "Angelique Israel (email/chat)", "Angelica Joy Reyes (email/chat)", "Reniel Palaganas (email/chat)", "Jeffrey Canlas (email/chat)", "Vladimir Daanoy (email/chat)", "Ma. Christine Flores (email/chat)", "Gina Mae Tenerife (email/chat)", "Juan Camilo Roa (email/chat)", "Laura Mancipe Robles (email/chat)"],
     pq: ["Ruth Abiegail Lalic", "Jimmark Avillon", "Lina Fajardo", "Jose Alejandro Castro Acuna", "Daniel Alejandro Lopez Urbina", "Jonathan Enrique Quiroz Jiménez", "Laura Nathaly Mendez Onrisa"]
   }, {
