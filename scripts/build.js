@@ -24,7 +24,7 @@ const html = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NFTY — By Aug 1</title>
+  <title>NFTY — Aug 26, 2026</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body>

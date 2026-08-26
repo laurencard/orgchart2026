@@ -953,7 +953,7 @@
       return (
         <div className="print-only p-6">
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, borderBottom: "2px solid #1e3a5f", paddingBottom: 10 }}>
-            <div style={{ fontWeight: 700, fontSize: 20, color: "#1e3a5f", letterSpacing: 1 }}>NFTY — By Aug 1</div>
+            <div style={{ fontWeight: 700, fontSize: 20, color: "#1e3a5f", letterSpacing: 1 }}>NFTY — Aug 26, 2026</div>
             <div style={{ marginLeft: "auto", fontSize: 10, color: "#666" }}>{new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</div>
           </div>
 
@@ -1013,7 +1013,7 @@
           <form onSubmit={submit} className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8 w-full max-w-sm space-y-4">
             <div className="flex flex-col items-center gap-3">
               <NFTYDoorLogo size={48} />
-              <h1 className="text-xl font-bold text-gray-800">NFTY — By Aug 1</h1>
+              <h1 className="text-xl font-bold text-gray-800">NFTY — Aug 26, 2026</h1>
               <p className="text-sm text-gray-500 text-center">Enter the password to view the organization chart.</p>
             </div>
             <div className="relative">
@@ -1224,7 +1224,7 @@
               <div className="flex items-center gap-3">
                 <NFTYDoorLogo size={32} />
                 <div>
-                  <h1 className="text-xl font-bold text-gray-800 tracking-tight">NFTY — By Aug 1</h1>
+                  <h1 className="text-xl font-bold text-gray-800 tracking-tight">NFTY — Aug 26, 2026</h1>
                   <p className="text-xs text-gray-400 -mt-0.5">Organization Chart · {totalPeople} people</p>
                 </div>
               </div>
@@ -1263,7 +1263,7 @@
               <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white rounded-xl shadow-lg px-10 py-4 flex items-center gap-4">
                 <NFTYDoorLogo size={48} />
                 <div className="text-left">
-                  <p className="font-bold text-xl tracking-wide">NFTY — By Aug 1</p>
+                  <p className="font-bold text-xl tracking-wide">NFTY — Aug 26, 2026</p>
                   <p className="text-xs opacity-80">Management</p>
                 </div>
               </div>
